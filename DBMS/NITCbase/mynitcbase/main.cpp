@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
   // OpenRelTable cache;
   
   Disk disk_run;
-
+// Stage 1
   // unsigned char buffer[BLOCK_SIZE];
   // Disk::readBlock(buffer,7000);
   // char message[]="hello";
@@ -22,6 +22,7 @@ int main(int argc, char *argv[]) {
   // Disk::readBlock(buffer2,7000);
   // memcpy(message2,buffer2+20,6);
   // std::cout << message2;
+//Stage 1 Exercise
     unsigned char buffer[BLOCK_SIZE];
     Disk::readBlock(buffer,0);
     for (int i = 0; i < 6; i++)
