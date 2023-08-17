@@ -11,6 +11,7 @@ int main(int argc, char *argv[]) {
   
   Disk disk_run;
 // Stage 1
+// vs code
   // unsigned char buffer[BLOCK_SIZE];
   // Disk::readBlock(buffer,7000);
   // char message[]="hello";
