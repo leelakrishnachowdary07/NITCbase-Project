@@ -18,30 +18,29 @@ int main(int argc, char *argv[]) {
   // (we will implement these functions later)
   relCatBuffer.getHeader(&relCatHeader);
   attrCatBuffer.getHeader(&attrCatHeader);
-
-  for (int i=0;i<relCatHeader.numEntries;i++) {
+  for (int i=0,k=0;i<relCatHeader.numEntries;i++) {
 
     Attribute relCatRecord[RELCAT_NO_ATTRS]; // will store the record from the relation catalog
 
     relCatBuffer.getRecord(relCatRecord, i);
 
     printf("Relation: %s\n", relCatRecord[RELCAT_REL_NAME_INDEX].sVal);
-
-    for (int j=0;j<attrCatHeader.numEntries;j++) {
+    int j=0;
+    for (;j<relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal;j++,k++) {
 
       // declare attrCatRecord and load the attribute catalog entry into it
       Attribute attrCatRecord[ATTRCAT_NO_ATTRS];
 
-      attrCatBuffer.getRecord(attrCatRecord,j);
+      attrCatBuffer.getRecord(attrCatRecord,k);
 
-
+    // printf("%d\n",(int)relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal);
       if (!strcmp(attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal,relCatRecord[RELCAT_REL_NAME_INDEX].sVal)) {
         const char *attrType = attrCatRecord[ATTRCAT_ATTR_TYPE_INDEX].nVal == NUMBER ? "NUM" : "STR";
         printf("  %s: %s\n", attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, attrType);
       }
-
-      if(j == attrCatHeader.numSlots-1){
-        j=0;
+      if(k == attrCatHeader.numSlots-1)
+      {
+        k=-1;
         attrCatBuffer=RecBuffer(attrCatHeader.rblock);
         attrCatBuffer.getHeader(&attrCatHeader);
       }
