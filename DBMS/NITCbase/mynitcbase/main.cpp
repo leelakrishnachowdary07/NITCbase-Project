@@ -36,8 +36,13 @@ int main(int argc, char *argv[]) {
       attrCatBuffer.getRecord(attrCatRecord,k);
 
     // printf("%d\n",(int)relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal);
+      
       if (!strcmp(attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal,relCatRecord[RELCAT_REL_NAME_INDEX].sVal)) {
         const char *attrType = attrCatRecord[ATTRCAT_ATTR_TYPE_INDEX].nVal == NUMBER ? "NUM" : "STR";
+        if (!strcmp(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal,"Class")){
+          const char ch[6]="Batch";
+          strcpy(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal,ch);
+      }
         printf("  %s: %s\n", attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, attrType);
       }
       if(k == attrCatHeader.numSlots-1)
