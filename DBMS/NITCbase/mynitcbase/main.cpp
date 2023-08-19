@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
         k=-1;
         attrCatBuffer=RecBuffer(attrCatHeader.rblock);
         attrCatBuffer.getHeader(&attrCatHeader);
-        hi;
+        hello;
       }
     }
     printf("\n");
