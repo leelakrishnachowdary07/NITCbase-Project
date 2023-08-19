@@ -39,6 +39,12 @@ int main(int argc, char *argv[]) {
         const char *attrType = attrCatRecord[ATTRCAT_ATTR_TYPE_INDEX].nVal == NUMBER ? "NUM" : "STR";
         printf("  %s: %s\n", attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, attrType);
       }
+
+      if(j == attrCatHeader.numSlots-1){
+        j=0;
+        attrCatBuffer=RecBuffer(attrCatHeader.rblock);
+        attrCatBuffer.getHeader(&attrCatHeader);
+      }
     }
     printf("\n");
   }
