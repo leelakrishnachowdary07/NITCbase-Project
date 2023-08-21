@@ -4,9 +4,9 @@
 #include "FrontendInterface/FrontendInterface.h"
 #include <iostream>
 int main(int argc, char *argv[]) {
-  //stage 2
+  //stage 3
   Disk disk_run;
-
+  StaticBuffer buffer;
   // create objects for the relation catalog and attribute catalog
   RecBuffer relCatBuffer(RELCAT_BLOCK);
   RecBuffer attrCatBuffer(ATTRCAT_BLOCK);
