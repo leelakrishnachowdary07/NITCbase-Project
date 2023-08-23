@@ -1,121 +1,113 @@
-#include "Buffer/StaticBuffer.h"
-#include "Cache/OpenRelTable.h"
-#include "Disk_Class/Disk.h"
-#include "FrontendInterface/FrontendInterface.h"
+#include "OpenRelTable.h"
 
-// local headers
-#include <iostream>
+#include <cstring>
+#include <stdlib.h>
+#include <stdio.h>
 
-void printBuffer(unsigned char buffer[], int size)
+AttrCacheEntry* createAttrCacheEntryList (int size) {
+    AttrCacheEntry *head = nullptr, *curr = nullptr;
+    head = curr = (AttrCacheEntry*) malloc (sizeof(AttrCacheEntry));
+    size--;
+    while (size--) {
+        curr->next = (AttrCacheEntry*) malloc (sizeof(AttrCacheEntry));
+        curr = curr->next;
+    }
+    curr->next = nullptr;
+
+    return head;
+}
+
+OpenRelTable::OpenRelTable()
 {
-	for (int i = 0; i < size; i++)
-	{
-		std::cout << (int)buffer[i] << " ";
-		if (i % 64 == 63)
-			std::cout << "\n";
-	}
-	std::cout << "\n";
+
+    // initialize relCache and attrCache with nullptr
+    for (int i = 0; i < MAX_OPEN; ++i)
+    {
+        RelCacheTable::relCache[i] = nullptr;
+        AttrCacheTable::attrCache[i] = nullptr;
+    }
+
+    /************ Setting up Relation Cache entries ************/
+    // (we need to populate relation cache with entries for the relation catalog
+    //  and attribute catalog.)
+
+    // setting up the variables
+    RecBuffer relCatBlock (RELCAT_BLOCK);
+    Attribute relCatRecord [RELCAT_NO_ATTRS];
+    RelCacheEntry *relCacheEntry = nullptr;
+
+    for (int relId = RELCAT_RELID; relId <= ATTRCAT_RELID+1; relId++) {
+        relCatBlock.getRecord(relCatRecord, relId);
+
+        relCacheEntry = (RelCacheEntry *) malloc (sizeof(RelCacheEntry));
+        RelCacheTable::recordToRelCatEntry(relCatRecord, &(relCacheEntry->relCatEntry));
+        relCacheEntry->recId.block = RELCAT_BLOCK;
+        relCacheEntry->recId.slot = relId;
+
+        RelCacheTable::relCache[relId] = relCacheEntry;
+    }
+
+    
+    /************ Setting up Attribute cache entries ************/
+    // (we need to populate attribute cache with entries for the relation catalog
+    //  and attribute catalog.)
+
+    // setting up the variables
+    RecBuffer attrCatBlock (ATTRCAT_BLOCK);
+    Attribute attrCatRecord [ATTRCAT_NO_ATTRS];
+    AttrCacheEntry *attrCacheEntry = nullptr, *head = nullptr;
+
+    for (int relId = RELCAT_RELID, recordId = 0; relId <= ATTRCAT_RELID+1; relId++) {
+        int numberOfAttributes = RelCacheTable::relCache[relId]->relCatEntry.numAttrs;
+        head = createAttrCacheEntryList (numberOfAttributes);
+        attrCacheEntry = head;
+        
+        while (numberOfAttributes--) {
+            attrCatBlock.getRecord(attrCatRecord, recordId);
+
+            AttrCacheTable::recordToAttrCatEntry(
+                attrCatRecord, 
+                &(attrCacheEntry->attrCatEntry)
+            );
+            attrCacheEntry->recId.slot = recordId++;
+            attrCacheEntry->recId.block = ATTRCAT_BLOCK;
+
+            attrCacheEntry = attrCacheEntry->next;
+        }
+
+        AttrCacheTable::attrCache[relId] = head;
+    }
+
+    /*
+    RecBuffer relCatBuffer (RELCAT_BLOCK);
+    Attribute relCatRecord [RELCAT_NO_ATTRS];
+
+    HeadInfo relCatHeader;
+    relCatBuffer.getHeader(&relCatHeader);
+
+    int relationIndex = -1;
+    char* relationName = "Students";
+
+    for (int index = 2; index < relCatHeader.numEntries; index++) {
+        relCatBuffer.getRecord(relCatRecord, index);
+
+        if (strcmp(relCatRecord[RELCAT_REL_NAME_INDEX].sVal, 
+                relationName) == 0) { // matching the name of the record we want
+            relationIndex = index;
+        }
+    }
+
+    if (relationIndex == -1) {
+        printf("Relation \"%s\" does not exist!\n", relationName);
+        // return;
+    }
+    else {
+        
+    }
+    */
 }
 
-void printAttributeCatalog () {
-	// create objects for the relation catalog and attribute catalog
-	RecBuffer relCatBuffer(RELCAT_BLOCK);
-	RecBuffer attrCatBuffer(ATTRCAT_BLOCK);
-
-	// creating headers for relation catalog and attribute catalog
-	HeadInfo relCatHeader;
-	HeadInfo attrCatHeader;
-
-	// load the headers of both the blocks into relCatHeader and attrCatHeader.
-	// (we will implement these functions later)
-	relCatBuffer.getHeader(&relCatHeader);
-	attrCatBuffer.getHeader(&attrCatHeader);
-
-	// attrCatBaseSlot stores the index of current slot, 
-	// which is incremented everytime an attribute entry 
-	// is handled
-	for (int i = 0, attrCatSlotIndex = 0; i < relCatHeader.numEntries; i++)
-	{
-		// will store the record from the relation catalog
-		Attribute relCatRecord[RELCAT_NO_ATTRS]; 
-		relCatBuffer.getRecord(relCatRecord, i);
-
-		printf("Relation: %s\n", relCatRecord[RELCAT_REL_NAME_INDEX].sVal);
-
-		int j = 0;
-		for (; j < relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal; j++, attrCatSlotIndex++)
-		{
-			// declare attrCatRecord and load the attribute catalog entry into it
-			Attribute attrCatRecord[ATTRCAT_NO_ATTRS];
-			attrCatBuffer.getRecord(attrCatRecord, attrCatSlotIndex);
-
-			// if the current attribute belongs to the current relation
-			// then we print it, which is checked by comparing names
-			if (strcmp(attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal,
-					   relCatRecord[RELCAT_REL_NAME_INDEX].sVal) == 0)
-			{
-				const char *attrType = attrCatRecord[ATTRCAT_ATTR_TYPE_INDEX].nVal == NUMBER
-										   ? "NUM" : "STR";
-				printf("  %s: %s\n", attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, attrType);
-			}
-
-			// once all the slots are traversed, we update the block number
-			// of the attrCatBuffer to the next block, and then attrCatHeader
-			// is updated to the header of next block
-			if (attrCatSlotIndex == attrCatHeader.numSlots-1) {
-				attrCatSlotIndex = -1; // implementational operation, since the loop will increment anyways
-				attrCatBuffer = RecBuffer (attrCatHeader.rblock);
-				attrCatBuffer.getHeader(&attrCatHeader);
-			}
-		}
-
-		printf("\n");
-	}
-}
-
-void updateAttributeName (const char* relName, 
-									const char* oldAttrName, const char* newAttrName) {
-	// used to hold reference to the block which referred to 
-	// for getting records, headers and updating them
-	RecBuffer attrCatBuffer (ATTRCAT_BLOCK);
-	
-	HeadInfo attrCatHeader;
-	attrCatBuffer.getHeader(&attrCatHeader);
-
-	// iterating the records in the Attribute Catalog
-	// to find the correct entry of relation and attribute
-	for (int recIndex = 0; recIndex < attrCatHeader.numEntries; recIndex++) {
-		Attribute attrCatRecord[ATTRCAT_NO_ATTRS];
-		attrCatBuffer.getRecord(attrCatRecord, recIndex);
-
-		// matching the relation name, and attribute name
-		if (strcmp(attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal, relName) == 0
-			&& strcmp(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, oldAttrName) == 0) 
-		{
-			strcpy(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, newAttrName);
-			attrCatBuffer.setRecord(attrCatRecord, recIndex);
-			std::cout << "Update successful!\n\n";
-			break;
-		}
-
-		// reaching at the end of the block, and thus loading
-		// the next block and setting the attrCatHeader & recIndex
-		if (recIndex == attrCatHeader.numSlots-1) {
-			recIndex = -1;
-			attrCatBuffer = RecBuffer (attrCatHeader.rblock);
-			attrCatBuffer.getHeader(&attrCatHeader);
-		}
-	}
-
-}
-
-int main(int argc, char *argv[])
+OpenRelTable::~OpenRelTable()
 {
-	Disk disk_run;
-
-	printAttributeCatalog();
-	updateAttributeName ("Students", "Class", "Batch");
-	printAttributeCatalog();
-
-	return 0;
+    // free all the memory that you allocated in the constructor
 }

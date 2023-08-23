@@ -3,57 +3,35 @@
 #include "Disk_Class/Disk.h"
 #include "FrontendInterface/FrontendInterface.h"
 #include <iostream>
+  //stage 3 cache
 int main(int argc, char *argv[]) {
-  //stage 3
   Disk disk_run;
   StaticBuffer buffer;
-  // create objects for the relation catalog and attribute catalog
-  RecBuffer relCatBuffer(RELCAT_BLOCK);
-  RecBuffer attrCatBuffer(ATTRCAT_BLOCK);
+  OpenRelTable cache;
 
-  HeadInfo relCatHeader;
-  HeadInfo attrCatHeader;
+  /*
+  for i = 0 and i = 1 (i.e RELCAT_RELID and ATTRCAT_RELID)
 
-  // load the headers of both the blocks into relCatHeader and attrCatHeader.
-  // (we will implement these functions later)
-  relCatBuffer.getHeader(&relCatHeader);
-  attrCatBuffer.getHeader(&attrCatHeader);
-  // std::cout <<relCatHeader.numEntries <<" ";
-  for (int i=0,k=0;i<relCatHeader.numEntries;i++) {
+      get the relation catalog entry using RelCacheTable::getRelCatEntry()
+      printf("Relation: %s\n", relname);
 
-    Attribute relCatRecord[RELCAT_NO_ATTRS]; // will store the record from the relation catalog
+      for j = 0 to numAttrs of the relation - 1
+          get the attribute catalog entry for (rel-id i, attribute offset j)
+           in attrCatEntry using AttrCacheTable::getAttrCatEntry()
 
-    relCatBuffer.getRecord(relCatRecord, i);
-
-    printf("Relation: %s\n", relCatRecord[RELCAT_REL_NAME_INDEX].sVal);
-    int j=0;
-    // std::cout <<relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal <<" ";
-    for (;j<relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal;j++,k++) {
-
-      // declare attrCatRecord and load the attribute catalog entry into it
-      Attribute attrCatRecord[ATTRCAT_NO_ATTRS];
-
-      attrCatBuffer.getRecord(attrCatRecord,k);
-
-    // printf("%d\n",(int)relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal);
-      
-      if (!strcmp(attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal,relCatRecord[RELCAT_REL_NAME_INDEX].sVal)) {
-        const char *attrType = attrCatRecord[ATTRCAT_ATTR_TYPE_INDEX].nVal == NUMBER ? "NUM" : "STR";
-        if (!strcmp(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal,"Class")){
-          const char ch[6]="Batch";
-          strcpy(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal,ch);
-      }
-        printf("  %s: %s\n", attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, attrType);
-      }
-      if(k == attrCatHeader.numSlots-1)
-      {
-        k=-1;
-        attrCatBuffer=RecBuffer(attrCatHeader.rblock);
-        attrCatBuffer.getHeader(&attrCatHeader);
-      }
+          printf("  %s: %s\n", attrName, attrType);
+  */
+ for(int i=0;i<2;i++){
+  RelCatEntry *relcatBuf;
+  RelCacheTable::getRelCatEntry(i,relcatBuf);
+  printf("Relation: %s\n",relcatBuf->relName);
+    for(int j=0;j<relcatBuf->numAttrs;j++){
+      AttrCatEntry* attrcatBuf;
+      AttrCacheTable::getAttrCatEntry(i,j,attrcatBuf);
+      const char *attrType = attrcatBuf->attrType == NUMBER ? "NUM" : "STR";
+			printf ("%s: %s\n", attrcatBuf->attrName, attrType);
     }
     printf("\n");
-  }
-
+ }
   return 0;
 }
