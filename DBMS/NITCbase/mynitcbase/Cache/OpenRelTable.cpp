@@ -69,7 +69,9 @@ OpenRelTable::OpenRelTable() {
   //    and attrCacheEntry.next appropriately
   // NOTE: allocate each entry dynamically using malloc
 
-  for(int i=0;i<relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal;i++)
+  for(int i=0;i<relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal;i++){
+    
+  }
 
   // set the next field in the last entry to nullptr
 
