@@ -1,7 +1,9 @@
+
 #include "OpenRelTable.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <cstring>
+#include <iostream>
 OpenRelTable::OpenRelTable() {
 
   // initialize relCache and attrCache with nullptr
@@ -69,14 +71,17 @@ OpenRelTable::OpenRelTable() {
   //    attrCacheEntry.recId.slot = i   (0 to 5)
   //    and attrCacheEntry.next appropriately
   // NOTE: allocate each entry dynamically using malloc
-  AttrCacheEntry *head;
-  AttrCacheEntry *temp;
-  head=(AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
-  temp=(AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
+  printf("hello\n");
+  AttrCacheEntry *head,*temp;
+  printf("#$");
+  temp = head=(AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
+  //temp=(AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
+  //head=temp;
   for(int i=0;i<5;i++){
     temp->next=(AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
     temp=temp->next;
   }
+  std::cout <<"HELLOLEELA";
   temp->next=NULL;
   temp=head;
   for(int i=0;i<6;i++){
@@ -94,13 +99,14 @@ OpenRelTable::OpenRelTable() {
   /**** setting up Attribute Catalog relation in the Attribute Cache Table ****/
   head=(AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
   temp=(AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
-  for(int i=0;i<5;i++){
+  head=temp;
+  for(int i=0;i<=5;i++){
     temp->next=(AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
     temp=temp->next;
   }
   temp->next=NULL;
   temp=head;
-  for(int i=6;i<15;i++){
+  for(int i=6;i<12;i++){
     attrCatBlock.getRecord(attrCatRecord,i);
     AttrCacheTable::recordToAttrCatEntry(attrCatRecord,&temp->attrCatEntry);
     temp->recId.block=ATTRCAT_BLOCK;
