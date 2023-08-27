@@ -117,6 +117,7 @@ OpenRelTable::OpenRelTable() {
   // read slots 6-11 from attrCatBlock and initialise recId appropriately
 
   // set the value at AttrCacheTable::attrCache[ATTRCAT_RELID]
+  
 }
 
 OpenRelTable::~OpenRelTable() {
