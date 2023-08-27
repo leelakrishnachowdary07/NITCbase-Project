@@ -51,6 +51,17 @@ OpenRelTable::OpenRelTable() {
   *(RelCacheTable::relCache[ATTRCAT_RELID]) = relCacheEntry;
 
 
+
+  relCatBlock.getRecord(relCatRecord,2);
+
+  RelCacheTable::recordToRelCatEntry(relCatRecord,&relCacheEntry.relCatEntry);
+  relCacheEntry.recId.block=RELCAT_BLOCK;
+  relCacheEntry.recId.slot=2;
+
+  // allocate this on the heap because we want it to persist outside this function
+  RelCacheTable::relCache[2] = (struct RelCacheEntry*)malloc(sizeof(RelCacheEntry));
+  *(RelCacheTable::relCache[2]) = relCacheEntry;
+
   
 
 
@@ -117,6 +128,26 @@ OpenRelTable::OpenRelTable() {
   // read slots 6-11 from attrCatBlock and initialise recId appropriately
 
   // set the value at AttrCacheTable::attrCache[ATTRCAT_RELID]
+  //exercise
+head=temp=(AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
+  for(int i=0;i<RelCacheTable::relCache[2]->relCatEntry.numAttrs;i++){
+    temp->next=(AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
+    temp=temp->next;
+  }
+  temp->next=NULL;
+  temp=head;
+  for(int i=12;i<12+RelCacheTable::relCache[2]->relCatEntry.numAttrs;i++){
+    attrCatBlock.getRecord(attrCatRecord,i);
+    AttrCacheTable::recordToAttrCatEntry(attrCatRecord,&temp->attrCatEntry);
+    temp->recId.block=ATTRCAT_BLOCK;
+    temp->recId.slot=i;
+    temp=temp->next;
+  }
+
+  // set the next field in the last entry to nullptr
+
+  AttrCacheTable::attrCache[2] = /* head of the linked list */head;
+  head=NULL;
   
 }
 
