@@ -22,14 +22,14 @@ int main(int argc, char *argv[]) {
           printf("  %s: %s\n", attrName, attrType);
   */
  for(int i=0;i<2;i++){
-  RelCatEntry *relcatBuf;
-  RelCacheTable::getRelCatEntry(i,relcatBuf);
-  printf("Relation: %s\n",relcatBuf->relName);
-    for(int j=0;j<relcatBuf->numAttrs;j++){
-      AttrCatEntry* attrcatBuf;
-      AttrCacheTable::getAttrCatEntry(i,j,attrcatBuf);
-      const char *attrType = attrcatBuf->attrType == NUMBER ? "NUM" : "STR";
-			printf ("%s: %s\n", attrcatBuf->attrName, attrType);
+  RelCatEntry relcatBuf;
+  RelCacheTable::getRelCatEntry(i,&relcatBuf);
+  printf("Relation: %s\n",relcatBuf.relName);
+    for(int j=0;j<relcatBuf.numAttrs;j++){
+      AttrCatEntry attrcatBuf;
+      AttrCacheTable::getAttrCatEntry(i,j,&attrcatBuf);
+      const char *attrType = attrcatBuf.attrType == NUMBER ? "NUM" : "STR";
+			printf ("%s: %s\n", attrcatBuf.attrName, attrType);
     }
     printf("\n");
  }

@@ -20,7 +20,6 @@ int AttrCacheTable::getAttrCatEntry(int relId, int attrOffset, AttrCatEntry* att
   // traverse the linked list of attribute cache entries
   for (AttrCacheEntry* entry = attrCache[relId]; entry != nullptr; entry = entry->next) {
     if (entry->attrCatEntry.offset == attrOffset) {
-      printf("11222");
       // copy entry->attrCatEntry to *attrCatBuf and return SUCCESS;
       *attrCatBuf=entry->attrCatEntry;
       return SUCCESS;
