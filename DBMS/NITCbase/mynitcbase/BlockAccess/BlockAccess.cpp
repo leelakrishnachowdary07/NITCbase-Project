@@ -138,8 +138,8 @@ int BlockAccess::renameRelation(char oldName[ATTR_SIZE], char newName[ATTR_SIZE]
     // If relation with name newName already exists (result of linearSearch
     //                                               is not {-1, -1})
     //    return E_RELEXIST;
-    if(search.block==-1 && search.slot==-1){
-        E_RELEXIST;
+    if(search.block!=-1 && search.slot!=-1){
+        return E_RELEXIST;
     }
 
     /* reset the searchIndex of the relation catalog using
@@ -153,12 +153,12 @@ int BlockAccess::renameRelation(char oldName[ATTR_SIZE], char newName[ATTR_SIZE]
     // If relation with name oldName does not exist (result of linearSearch is {-1, -1})
     //    return E_RELNOTEXIST;
     if(search.block==-1 && search.slot==-1){
-        E_RELNOTEXIST;
+        return E_RELNOTEXIST;
     }
     /* get the relation catalog record of the relation to rename using a RecBuffer
        on the relation catalog [RELCAT_BLOCK] and RecBuffer.getRecord function
     */
-    RecBuffer recbuff(search.block);
+    RecBuffer recbuff(RELCAT_BLOCK);
     Attribute rec[6];
     recbuff.getRecord(rec,search.slot);
     /* update the relation name attribute in the record with newName.
@@ -183,11 +183,12 @@ int BlockAccess::renameRelation(char oldName[ATTR_SIZE], char newName[ATTR_SIZE]
     //    set back the record using RecBuffer.setRecord
     for(int i=0;i<rec[RELCAT_NO_ATTRIBUTES_INDEX].nVal;i++){
         search=linearSearch(1,ATTRCAT_ATTR_RELNAME,oldRelationName,EQ);
+        RecBuffer attrcat(search.block);
         Attribute attrcatrec[6];
-        recbuff.getRecord(attrcatrec,search.slot);
+        attrcat.getRecord(attrcatrec,search.slot);
 
         strcpy(attrcatrec[0].sVal,newName);
-        recbuff.setRecord(attrcatrec,search.slot);
+        attrcat.setRecord(attrcatrec,search.slot);
     }
 
     return SUCCESS;

@@ -31,7 +31,7 @@ int Schema::closeRel(char relName[ATTR_SIZE]) {
 
   return OpenRelTable::closeRel(relId);
 }
-int renameRel(char oldRelName[ATTR_SIZE], char newRelName[ATTR_SIZE]) {
+int Schema::renameRel(char oldRelName[ATTR_SIZE], char newRelName[ATTR_SIZE]) {
     // if the oldRelName or newRelName is either Relation Catalog or Attribute Catalog,
         // return E_NOTPERMITTED
         // (check if the relation names are either "RELATIONCAT" and "ATTRIBUTECAT".
