@@ -116,6 +116,72 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
 
   return SUCCESS;
 }
+int Algebra::insert(char relName[ATTR_SIZE], int nAttrs, char record[][ATTR_SIZE]){
+    // if relName is equal to "RELATIONCAT" or "ATTRIBUTECAT"
+    // return E_NOTPERMITTED;
+    if(!strcmp(relName,"RELATIONCAT") || !strcmp(relName,"ATTRIBUTECAT")){
+      return E_NOTPERMITTED;
+    }
+    // get the relation's rel-id using OpenRelTable::getRelId() method
+    int relId = OpenRelTable::getRelId(relName);
 
+    // if relation is not open in open relation table, return E_RELNOTOPEN
+    // (check if the value returned from getRelId function call = E_RELNOTOPEN)
+    if(relId==E_RELNOTOPEN){
+      return E_RELNOTOPEN;
+    }
+    // get the relation catalog entry from relation cache
+    // (use RelCacheTable::getRelCatEntry() of Cache Layer)
+    RelCatEntry relcatbuff;
+    RelCacheTable::getRelCatEntry(relId,&relcatbuff);
 
+    /* if relCatEntry.numAttrs != numberOfAttributes in relation,
+       return E_NATTRMISMATCH */
+    if(relcatbuff.numAttrs != nAttrs){
+      return E_NATTRMISMATCH;
+    }
+    // let recordValues[numberOfAttributes] be an array of type union Attribute
+    Attribute recordValues[nAttrs];
+    /*
+        Converting 2D char array of record values to Attribute array recordValues
+     */
+    // iterate through 0 to nAttrs-1: (let i be the iterator)
+    for(int i=0;i<nAttrs;i++)
+    {
+        // get the attr-cat entry for the i'th attribute from the attr-cache
+        // (use AttrCacheTable::getAttrCatEntry())
+        AttrCatEntry attrcatbuff;
+        AttrCacheTable::getAttrCatEntry(relId,i,&attrcatbuff);
 
+        // let type = attrCatEntry.attrType;
+        int type=attrcatbuff.attrType;
+
+        if (type == NUMBER)
+        {
+            // if the char array record[i] can be converted to a number
+            // (check this using isNumber() function)
+            if(isNumber(record[i]))
+            {
+                /* convert the char array to numeral and store it
+                   at recordValues[i].nVal using atof() */
+                recordValues[i].nVal=atof(record[i]);
+                
+            }
+            else
+            {
+                return E_ATTRTYPEMISMATCH;
+            }
+        }
+        else if (type == STRING)
+        {
+            // copy record[i] to recordValues[i].sVal
+            strcpy(recordValues[i].sVal,record[i]);
+        }
+    }
+
+    // insert the record by calling BlockAccess::insert() function
+    int retVal=BlockAccess::insert(relId,recordValues);
+    // let retVal denote the return value of insert call
+
+    return retVal;
+}
