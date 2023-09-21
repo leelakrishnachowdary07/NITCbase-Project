@@ -99,7 +99,7 @@ int RelCacheTable::resetSearchIndex(int relId) {
   }
 int RelCacheTable::setRelCatEntry(int relId, RelCatEntry *relCatBuf) {
 
-  if(/*relId is outside the range [0, MAX_OPEN-1]*/relId<0 || relId>MAX_OPEN-1) {
+  if(/*relId is outside the range [0, MAX_OPEN-1]*/relId<0 || relId>=MAX_OPEN) {
     return E_OUTOFBOUND;
   }
 

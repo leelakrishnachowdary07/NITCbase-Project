@@ -347,7 +347,7 @@ int OpenRelTable::closeRel(int relId) {
     RecBuffer relCatBlock(recId.block);
 
     // Write back to the buffer using relCatBlock.setRecord() with recId.slot
-    relCatBlock.setRecord(relcatbuff,recId.slot);
+    relCatBlock.setRecord(relcatbuff,RelCacheTable::relCache[relId]->recId.slot);
   }
 
   // free the memory allocated in the relation and attribute caches which was
@@ -385,6 +385,5 @@ int OpenRelTable::closeRel(int relId) {
 
   // update `metainfo` to set `relId` as a free slot
 
-  return SUCCESS;
   return SUCCESS;
 }

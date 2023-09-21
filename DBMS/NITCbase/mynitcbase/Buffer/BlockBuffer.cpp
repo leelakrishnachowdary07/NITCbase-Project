@@ -215,7 +215,7 @@ int BlockBuffer::setHeader(struct HeadInfo *head){
     bufferHeader->pblock=head->pblock;
     bufferHeader->rblock=head->rblock;
     // update dirty bit by calling StaticBuffer::setDirtyBit()
-    int ret=StaticBuffer::setDirtyBit(this->blockNum);
+    ret=StaticBuffer::setDirtyBit(this->blockNum);
     // if setDirtyBit() failed, return the error code
     if(ret != SUCCESS){
       return ret;
@@ -241,7 +241,7 @@ int BlockBuffer::setBlockType(int blockType){
     // object's block number to `blockType`.
     StaticBuffer::blockAllocMap[this->blockNum]=blockType;
     // update dirty bit by calling StaticBuffer::setDirtyBit()
-    int ret=StaticBuffer::setDirtyBit(this->blockNum);
+    ret=StaticBuffer::setDirtyBit(this->blockNum);
     // if setDirtyBit() failed
         // return the returned value from the call
     if(ret!=SUCCESS){
@@ -268,7 +268,11 @@ int BlockBuffer::getFreeBlock(int blockType){
     // set the object's blockNum to the block number of the free block.
     this->blockNum=free;
     // find a free buffer using StaticBuffer::getFreeBuffer() .
-    int buff=StaticBuffer::getFreeBuffer(this->blockNum);
+    int buff=StaticBuffer::getFreeBuffer(free);
+    if (buff < 0 && buff >= BUFFER_CAPACITY) {
+		printf ("Error: Buffer is full\n");
+		return buff;
+	}
     // initialize the header of the block passing a struct HeadInfo with values
     // pblock: -1, lblock: -1, rblock: -1, numEntries: 0, numAttrs: 0, numSlots: 0
     // to the setHeader() function.
@@ -293,7 +297,7 @@ BlockBuffer::BlockBuffer(char blockType){
       blk=UNUSED_BLK;
     }
     int blocknum=getFreeBlock(blk);
-    if(blocknum < 0 || blockNum>DISK_BLOCKS){
+    if(blocknum < 0 || blockNum>=DISK_BLOCKS){
       std::cout<<"ERROR BLOCK NOT AVAILABLE";
       this->blockNum=blockNum;    
       return;
