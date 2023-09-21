@@ -387,3 +387,48 @@ int OpenRelTable::closeRel(int relId) {
 
   return SUCCESS;
 }
+OpenRelTable::~OpenRelTable() {
+
+    for (int i=2;i<MAX_OPEN;i++):
+    {
+        if (ith relation is still open):
+        {
+            // close the relation using openRelTable::closeRel().
+        }
+    }
+
+    /**** Closing the catalog relations in the relation cache ****/
+
+    //releasing the relation cache entry of the attribute catalog
+
+    if (/* RelCatEntry of the ATTRCAT_RELID-th RelCacheEntry has been modified */) {
+
+        /* Get the Relation Catalog entry from RelCacheTable::relCache
+        Then convert it to a record using RelCacheTable::relCatEntryToRecord(). */
+
+        // declaring an object of RecBuffer class to write back to the buffer
+        RecBuffer relCatBlock(recId.block);
+
+        // Write back to the buffer using relCatBlock.setRecord() with recId.slot
+    }
+    // free the memory dynamically allocated to this RelCacheEntry
+
+
+    //releasing the relation cache entry of the relation catalog
+
+    if(/* RelCatEntry of the RELCAT_RELID-th RelCacheEntry has been modified */) {
+
+        /* Get the Relation Catalog entry from RelCacheTable::relCache
+        Then convert it to a record using RelCacheTable::relCatEntryToRecord(). */
+
+        // declaring an object of RecBuffer class to write back to the buffer
+        RecBuffer relCatBlock(recId.block);
+
+        // Write back to the buffer using relCatBlock.setRecord() with recId.slot
+    }
+    // free the memory dynamically allocated for this RelCacheEntry
+
+
+    // free the memory allocated for the attribute cache entries of the
+    // relation catalog and the attribute catalog
+}
