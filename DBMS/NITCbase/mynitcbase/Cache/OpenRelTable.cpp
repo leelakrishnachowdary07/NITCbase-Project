@@ -163,14 +163,14 @@ head=temp=(AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
   
 }
 
-OpenRelTable::~OpenRelTable() {
-  // free all the memory that you allocated in the constructor
-  for (int i = 2; i < MAX_OPEN; ++i) {
-    if (!tableMetaInfo[i].free) {
-      OpenRelTable::closeRel(i); // we will implement this function later
-    }
-  }
-}
+// OpenRelTable::~OpenRelTable() {
+//   // free all the memory that you allocated in the constructor
+//   for (int i = 2; i < MAX_OPEN; ++i) {
+//     if (!tableMetaInfo[i].free) {
+//       OpenRelTable::closeRel(i); // we will implement this function later
+//     }
+//   }
+// }
 /* This function will open a relation having name `relName`.
 Since we are currently only working with the relation and attribute catalog, we
 will just hardcode it. In subsequent stages, we will loop through all the relations
@@ -388,8 +388,8 @@ int OpenRelTable::closeRel(int relId) {
   return SUCCESS;
 }
 OpenRelTable::~OpenRelTable() {
-
-    for (int i=2;i<MAX_OPEN;i++);
+    int i;
+    for ( i=2;i<MAX_OPEN;i++);
     {
         //if (ith relation is still open)
         if(OpenRelTable::tableMetaInfo[i].free==false)
