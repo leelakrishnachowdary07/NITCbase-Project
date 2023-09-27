@@ -334,6 +334,8 @@ int OpenRelTable::closeRel(int relId) {
   if (/* rel-id corresponds to a free slot*/tableMetaInfo[relId].free==true) {
     return E_RELNOTOPEN;
   }
+  /****** Releasing the Relation Cache entry of the relation ******/
+
   if (/* RelCatEntry of the relId-th Relation Cache entry has been modified */RelCacheTable::relCache[relId]->dirty==true)
   {
 
@@ -349,7 +351,7 @@ int OpenRelTable::closeRel(int relId) {
     // Write back to the buffer using relCatBlock.setRecord() with recId.slot
     relCatBlock.setRecord(relcatbuff,RelCacheTable::relCache[relId]->recId.slot);
   }
-
+  /****** Releasing the Attribute Cache entry of the relation ******/
   // free the memory allocated in the relation and attribute caches which was
   // allocated in the OpenRelTable::openRel() function
   free(RelCacheTable::relCache[relId]);
