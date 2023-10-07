@@ -50,6 +50,15 @@ int StaticBuffer::getFreeBuffer(int blockNum) {
             break;
         }
     }
+    // if a free buffer is not available,
+    //     find the buffer with the largest timestamp
+    //     IF IT IS DIRTY, write back to the disk using Disk::writeBlock()
+    //     set bufferNum = index of this buffer
+
+    // update the metaInfo entry corresponding to bufferNum with
+    // free:false, dirty:false, blockNum:the input block number, timeStamp:0.
+
+    // return the bufferNum.
     if(allocatedBuffer==-1){
       int lar=-1;
       int idx=-1;
