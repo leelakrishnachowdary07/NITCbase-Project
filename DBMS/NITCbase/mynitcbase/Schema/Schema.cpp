@@ -25,7 +25,7 @@ int Schema::closeRel(char relName[ATTR_SIZE]) {
   // E_RELNOTOPEN if it is not. we will implement this later.
   int relId = OpenRelTable::getRelId(relName);
 
-  if (/* relation is not open */relId<0 && relId>=MAX_OPEN) {
+  if (/* relation is not open */relId==E_RELNOTEXIST) {
     return E_RELNOTOPEN;
   }
 
@@ -168,7 +168,7 @@ int Schema::deleteRel(char *relName) {
     //     return E_NOTPERMITTED
         // (check if the relation names are either "RELATIONCAT" and "ATTRIBUTECAT".
         // you may use the following constants: RELCAT_NAME and ATTRCAT_NAME)
-    if(strcmp(relName,"RELATIONCAT")==0 || !strcmp(relName,"ATTRIBUTECAT")==0){
+    if(strcmp(relName,"RELATIONCAT")==0 || strcmp(relName,"ATTRIBUTECAT")==0){
       return E_NOTPERMITTED;
     }
     // get the rel-id using appropriate method of OpenRelTable class by

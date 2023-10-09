@@ -347,7 +347,7 @@ int BlockBuffer::getBlockNum(){
 void BlockBuffer::releaseBlock(){
 
     // if blockNum is INVALID_BLOCK (-1), or it is invalidated already, do nothing
-    if(blockNum==-1 || StaticBuffer::blockAllocMap[blockNum]==UNUSED_BLK){
+    if(blockNum==INVALID_BLOCKNUM || StaticBuffer::blockAllocMap[blockNum]==UNUSED_BLK){
       return;
     }
 
@@ -367,7 +367,7 @@ void BlockBuffer::releaseBlock(){
         // free the block in disk by setting the data type of the entry
         // corresponding to the block number in StaticBuffer::blockAllocMap
         // to UNUSED_BLK.
-        StaticBuffer::blockAllocMap[buffnum]=UNUSED_BLK;
+        StaticBuffer::blockAllocMap[blockNum]=UNUSED_BLK;
 
         // set the object's blockNum to INVALID_BLOCK (-1)
         this->blockNum=-1;
