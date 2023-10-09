@@ -347,8 +347,7 @@ int BlockBuffer::getBlockNum(){
 void BlockBuffer::releaseBlock(){
 
     // if blockNum is INVALID_BLOCK (-1), or it is invalidated already, do nothing
-    if(blockNum==-1){
-      StaticBuffer::blockAllocMap[blockNum]=UNUSED_BLK;
+    if(blockNum==-1 || StaticBuffer::blockAllocMap[blockNum]==UNUSED_BLK){
       return;
     }
 
@@ -362,7 +361,7 @@ void BlockBuffer::releaseBlock(){
         // if the block is present in the buffer, free the buffer
         // by setting the free flag of its StaticBuffer::tableMetaInfo entry
         // to true.
-        if(buffnum>=0 || buffnum<BUFFER_CAPACITY){
+        if(buffnum>=0 && buffnum<BUFFER_CAPACITY){
           StaticBuffer::metainfo[buffnum].free=true;
         }
         // free the block in disk by setting the data type of the entry
