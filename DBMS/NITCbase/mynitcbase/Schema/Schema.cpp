@@ -42,7 +42,7 @@ int Schema::renameRel(char oldRelName[ATTR_SIZE], char newRelName[ATTR_SIZE]) {
     // if the relation is open
     //    (check if OpenRelTable::getRelId() returns E_RELNOTOPEN)
     //    return E_RELOPEN
-    if(OpenRelTable::getRelId(oldRelName)>=0){
+    if(OpenRelTable::getRelId(oldRelName) != E_RELNOTEXIST){
       return E_RELOPEN;
     }
     int retVal = BlockAccess::renameRelation(oldRelName, newRelName);
@@ -59,9 +59,10 @@ int Schema::renameAttr(char *relName, char *oldAttrName, char *newAttrName) {
     // if the relation is open
         //    (check if OpenRelTable::getRelId() returns E_RELNOTOPEN)
         //    return E_RELOPEN
-  if(OpenRelTable::getRelId(relName)>=0){
-      return E_RELOPEN;
-    }
+ int relId = OpenRelTable::getRelId(relName);
+	if (relId != E_RELNOTOPEN)
+           return E_RELOPEN;
+           
     // Call BlockAccess::renameAttribute with appropriate arguments.
 
     // return the value returned by the above renameAttribute() call
@@ -118,7 +119,7 @@ int Schema ::createRel(char relName[],int nAttrs, char attrs[][ATTR_SIZE],int at
     relCatRecord[RELCAT_LAST_BLOCK_INDEX].nVal=-1;
     // offset RELCAT_NO_SLOTS_PER_BLOCK_INDEX: floor((2016 / (16 * nAttrs + 1)))
     // (number of slots is calculated as specified in the physical layer docs)
-    relCatRecord[RELCAT_LAST_BLOCK_INDEX].nVal=floor(2016/(16*nAttrs+1));
+    relCatRecord[RELCAT_NO_SLOTS_PER_BLOCK_INDEX].nVal=floor(2016/(16*nAttrs+1));
     // retVal = BlockAccess::insert(RELCAT_RELID(=0), relCatRecord);
     int ret=BlockAccess::insert(0,relCatRecord);
     // if BlockAccess::insert fails return retVal

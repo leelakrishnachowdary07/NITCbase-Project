@@ -305,11 +305,9 @@ int BlockAccess::insert(int relId, Attribute *record) {
 
         /* if a free slot is found, set rec_id and discontinue the traversal
            of the linked list of record blocks (break from the loop) */
-        int free;
         for(int i=0;i<slots;i++){
             if(smap[i]==SLOT_UNOCCUPIED){
-                free=i;
-                rec_id=RecId{blockNum,free};
+                rec_id=RecId{blockNum,i};
                 break;
             }
         }
