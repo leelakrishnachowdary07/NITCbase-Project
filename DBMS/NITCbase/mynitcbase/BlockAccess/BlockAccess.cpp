@@ -365,7 +365,7 @@ int BlockAccess::insert(int relId, Attribute *record) {
         HeadInfo blockhead;
         blockhead.blockType=REC;
         blockhead.pblock=-1;
-        blockhead.lblock=-1;
+        blockhead.lblock=prevBlockNum;
         blockhead.rblock=-1;
         blockhead.numEntries=0;
         blockhead.numAttrs=numOfAttributes;
@@ -526,6 +526,7 @@ int BlockAccess::deleteRelation(char relName[ATTR_SIZE]) {
     ***/
 
     // reset the searchIndex of the attribute catalog
+    RelCacheTable::resetSearchIndex(1);
 
     int numberOfAttributesDeleted = 0;
 
@@ -578,6 +579,12 @@ int BlockAccess::deleteRelation(char relName[ATTR_SIZE]) {
             // create a RecBuffer for lblock and call appropriate methods
             RecBuffer lblockbuff(rechead.lblock);
 
+            HeadInfo lhead;
+            lblockbuff.getHeader(&lhead);
+
+            lhead.rblock=rechead.rblock;
+            lblockbuff.setHeader(&lhead);
+
             if (/* header.rblock != -1 */rechead.rblock!=-1) {
                 /* Get the header of the right block and set it's lblock to
                    this block's lblock */
@@ -626,7 +633,7 @@ int BlockAccess::deleteRelation(char relName[ATTR_SIZE]) {
        free(SLOT_UNOCCUPIED) and set it back. */
     unsigned char smap[relcathead.numSlots];
     relcatbuff.getSlotMap(smap);
-    smap[recid.slot]=SLOT_OCCUPIED;
+    smap[recid.slot]=SLOT_UNOCCUPIED;
     relcatbuff.setSlotMap(smap);
     /*** Updating the Relation Cache Table ***/
     /** Update relation catalog record entry (number of records in relation

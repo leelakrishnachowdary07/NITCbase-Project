@@ -460,7 +460,7 @@ OpenRelTable::~OpenRelTable() {
           Attribute attrcatrec[6];
           AttrCacheTable::attrCatEntryToRecord(&attrcatbuff,attrcatrec);
 
-          RecId recId=AttrCacheTable::attrCache[j]->recId;
+          RecId recId=temp->recId;
           RecBuffer relCatBlock(recId.block);
           relCatBlock.setRecord(attrcatrec,recId.slot);
 

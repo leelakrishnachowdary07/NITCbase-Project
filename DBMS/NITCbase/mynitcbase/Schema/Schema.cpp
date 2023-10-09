@@ -80,10 +80,10 @@ int Schema ::createRel(char relName[],int nAttrs, char attrs[][ATTR_SIZE],int at
 
     // Reset the searchIndex using RelCacheTable::resetSearhIndex()
     // Search the relation catalog (relId given by the constant RELCAT_RELID)
-    RelCacheTable::resetSearchIndex(RELCAT_RELID);
+    RelCacheTable::resetSearchIndex(0);
     // for attribute value attribute "RelName" = relNameAsAttribute using
     // BlockAccess::linearSearch() with OP = EQ
-    targetRelId=BlockAccess::linearSearch(RELCAT_RELID,"RelName",relNameAsAttribute,EQ);
+    targetRelId=BlockAccess::linearSearch(0,"RelName",relNameAsAttribute,EQ);
 
     // if a relation with name `relName` already exists  ( linearSearch() does
     //                                                     not return {-1,-1} )
@@ -94,9 +94,9 @@ int Schema ::createRel(char relName[],int nAttrs, char attrs[][ATTR_SIZE],int at
     // compare every pair of attributes of attrNames[] array
     // if any attribute names have same string value,
     //     return E_DUPLICATEATTR (i.e 2 attributes have same value)
-    for(int i=0;i<nAttrs;i++){
-      for(int j=0;j<nAttrs;j++){
-        if(j!=i && !strcmp(attrs[i],attrs[j])){
+    for(int i=0;i<nAttrs-1;i++){
+      for(int j=i+1;j<nAttrs;j++){
+        if(strcmp(attrs[i],attrs[j])==0){
           return E_DUPLICATEATTR;
         }
       }
@@ -120,7 +120,7 @@ int Schema ::createRel(char relName[],int nAttrs, char attrs[][ATTR_SIZE],int at
     // (number of slots is calculated as specified in the physical layer docs)
     relCatRecord[RELCAT_LAST_BLOCK_INDEX].nVal=floor(2016/(16*nAttrs+1));
     // retVal = BlockAccess::insert(RELCAT_RELID(=0), relCatRecord);
-    int ret=BlockAccess::insert(RELCAT_RELID, relCatRecord);
+    int ret=BlockAccess::insert(0,relCatRecord);
     // if BlockAccess::insert fails return retVal
     // (this call could fail if there is no more space in the relation catalog)
     if(ret!=SUCCESS){
@@ -167,14 +167,16 @@ int Schema::deleteRel(char *relName) {
     //     return E_NOTPERMITTED
         // (check if the relation names are either "RELATIONCAT" and "ATTRIBUTECAT".
         // you may use the following constants: RELCAT_NAME and ATTRCAT_NAME)
-    if(!strcmp(relName,"RELATIONCAT") || !strcmp(relName,"ATTRIBUTECAT")){
+    if(strcmp(relName,"RELATIONCAT")==0 || !strcmp(relName,"ATTRIBUTECAT")==0){
       return E_NOTPERMITTED;
     }
     // get the rel-id using appropriate method of OpenRelTable class by
     // passing relation name as argument
     int relid=OpenRelTable::getRelId(relName);
     // if relation is opened in open relation table, return E_RELOPEN
-    if(relid>=0 && relid<MAX_OPEN) return E_RELOPEN;
+    if(relid>=0 && relid<MAX_OPEN) {
+      return E_RELOPEN;
+    }
 
     // Call BlockAccess::deleteRelation() with appropriate argument.
     int ret=BlockAccess::deleteRelation(relName);
