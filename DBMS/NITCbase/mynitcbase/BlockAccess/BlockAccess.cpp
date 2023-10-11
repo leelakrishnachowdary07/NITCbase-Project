@@ -674,7 +674,7 @@ int BlockAccess::deleteRelation(char relName[ATTR_SIZE]) {
 	strcpy((char*)relNameAttr.sVal,(const char*)relName);
 
     //  linearSearch on the relation catalog for RelName = relNameAttr
-	RecId relCatRecId = BlockAccess::linearSearch(RELCAT_RELID, RELCAT_ATTR_RELNAME, relNameAttr ,EQ);
+	RecId relCatRecId = BlockAccess::linearSearch(0, RELCAT_ATTR_RELNAME, relNameAttr ,EQ);
 
     // if the relation does not exist (linearSearch returned {-1, -1})
 	if (relCatRecId.block==-1 && relCatRecId.slot==-1) return E_RELNOTEXIST;
