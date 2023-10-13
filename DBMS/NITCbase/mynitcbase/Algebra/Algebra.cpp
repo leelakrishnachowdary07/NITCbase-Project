@@ -344,7 +344,6 @@ int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE]) {
     strcpy(attrNames[i],buff.attrName);
     attrTypes[i]=buff.attrType;
    }
-
     /*** Creating and opening the target relation ***/
 
     // Create a relation for target relation by calling Schema::createRel()
@@ -383,7 +382,7 @@ int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE]) {
 
         // ret = BlockAccess::insert(targetRelId, proj_record);
         int ret=BlockAccess::insert(tarrelid,record);
-
+        // std::cout<<record[0].nVal <<" ";
         if (/* insert fails */ret!=SUCCESS) {
             // close the targetrel by calling Schema::closeRel()
             // delete targetrel by calling Schema::deleteRel()

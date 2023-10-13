@@ -447,7 +447,6 @@ NOTE: This function will copy the result of the search to the `record` argument.
 */
 int BlockAccess::search(int relId, Attribute *record, char attrName[ATTR_SIZE], Attribute attrVal, int op) {
     // Declare a variable called recid to store the searched record
-    RecId recId;
 
     /* search for the record id (recid) corresponding to the attribute with
     attribute name attrName, with value attrval and satisfying the condition op
@@ -455,15 +454,15 @@ int BlockAccess::search(int relId, Attribute *record, char attrName[ATTR_SIZE], 
     RecId recid=BlockAccess::linearSearch(relId,attrName,attrVal,op);
     // if there's no record satisfying the given condition (recId = {-1, -1})
     //    return E_NOTFOUND;
-    if(recId.block==-1 && recId.slot==-1){
+    if(recid.block==-1 && recid.slot==-1){
         return E_NOTFOUND;
     }
     /* Copy the record with record id (recId) to the record buffer (record)
        For this Instantiate a RecBuffer class object using recId and
        call the appropriate method to fetch the record
     */
-    RecBuffer blockbuff(recId.block);
-    blockbuff.getRecord(record,recId.slot);
+    RecBuffer blockbuff(recid.block);
+    blockbuff.getRecord(record,recid.slot);
     return SUCCESS;
 }
 int BlockAccess::deleteRelation(char relName[ATTR_SIZE]) {
@@ -720,7 +719,7 @@ int BlockAccess::project(int relId, Attribute *record) {
         unsigned char smap[rechead.numSlots];
         recbuff.getSlotMap(smap);
 
-        if(/* slot >= the number of slots per block*/slot>rechead.numSlots)
+        if(/* slot >= the number of slots per block*/slot>=rechead.numSlots)
         {
             // (no more slots in this block)
             // update block = right block of block
