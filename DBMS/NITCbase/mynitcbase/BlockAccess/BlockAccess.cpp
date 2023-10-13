@@ -749,8 +749,6 @@ int BlockAccess::project(int relId, Attribute *record) {
 
     // declare nextRecId to store the RecId of the record found
     RecId nextRecId{block, slot};
-    nextRecId.block=block;
-    nextRecId.slot=slot;
 
     // set the search index to nextRecId using RelCacheTable::setSearchIndex
     RelCacheTable::setSearchIndex(relId,&nextRecId);

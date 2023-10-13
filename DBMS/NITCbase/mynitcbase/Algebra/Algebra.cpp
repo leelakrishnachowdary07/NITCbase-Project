@@ -127,8 +127,8 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
     // get the attr-cat entry for attr, using AttrCacheTable::getAttrCatEntry()
     // if getAttrcatEntry() call fails return E_ATTRNOTEXIST
     AttrCatEntry attrCatEntry;
-    AttrCacheTable::getAttrCatEntry(srcrelid,attr,&attrCatEntry);
-
+    int ret=AttrCacheTable::getAttrCatEntry(srcrelid,attr,&attrCatEntry);
+    if (ret == E_ATTRNOTEXIST) return E_ATTRNOTEXIST;
 
     /*** Convert strVal to an attribute of data type NUMBER or STRING ***/
 
@@ -184,7 +184,7 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
 
     /* Create the relation for target relation by calling Schema::createRel()
        by providing appropriate arguments */
-    int ret=Schema::createRel(targetRel,src_nAttrs,attr_names,attr_types);
+    ret=Schema::createRel(targetRel,src_nAttrs,attr_names,attr_types);
     // if the createRel returns an error code, then return that value.
     if(ret!=SUCCESS){
       return ret;
@@ -195,7 +195,7 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
     int tarrelid=OpenRelTable::openRel(targetRel);
     /* If opening fails, delete the target relation by calling Schema::deleteRel()
        and return the error value returned from openRel() */
-    if(tarrelid<0 || tarrelid>MAX_OPEN){
+    if(tarrelid<0 || tarrelid>=MAX_OPEN){
       Schema::deleteRel(targetRel);
       return tarrelid;
     }
@@ -221,7 +221,7 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
     // read every record that satisfies the condition by repeatedly calling
     // BlockAccess::search() until there are no more records to be read
 
-    while (/* BlockAccess::search() returns success */BlockAccess::search(srcrelid,record,attr,attrVal,op)) {
+    while (/* BlockAccess::search() returns success */BlockAccess::search(srcrelid,record,attr,attrVal,op) == SUCCESS) {
 
         // ret = BlockAccess::insert(targetRelId, record);
         ret=BlockAccess::insert(tarrelid,record);
@@ -318,9 +318,7 @@ int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE]) {
     int srcRelId = OpenRelTable::getRelId(srcRel);/*srcRel's rel-id (use OpenRelTable::getRelId() function)*/
 
     // if srcRel is not open in open relation table, return E_RELNOTOPEN
-    if(srcRelId==E_RELNOTOPEN){
-      return E_RELNOTOPEN;
-    }
+    if (srcRelId < 0 || srcRelId >= MAX_OPEN) return E_RELNOTOPEN;
 
     // get RelCatEntry of srcRel using RelCacheTable::getRelCatEntry()
     RelCatEntry srcbuff;
@@ -373,6 +371,7 @@ int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE]) {
 
     // Take care to reset the searchIndex before calling the project function
     // using RelCacheTable::resetSearchIndex()
+    RelCacheTable::resetSearchIndex(srcRelId);
 
     Attribute record[numAttrs];
 
@@ -406,9 +405,7 @@ int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], int tar_
     int srcRelId = /*srcRel's rel-id (use OpenRelTable::getRelId() function)*/OpenRelTable::getRelId(srcRel);
 
     // if srcRel is not open in open relation table, return E_RELNOTOPEN
-    if(srcRelId==E_RELNOTOPEN){
-      return E_RELNOTOPEN;
-    }
+    if (srcRelId < 0 || srcRelId >= MAX_OPEN) return E_RELNOTOPEN;
 
     // get RelCatEntry of srcRel using RelCacheTable::getRelCatEntry()
     RelCatEntry srcbuff;
@@ -450,9 +447,7 @@ int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], int tar_
 
 
     // if the createRel returns an error code, then return that value.
-    if(ret<0 || ret>=MAX_OPEN){
-      return ret;
-    }
+    if (ret != SUCCESS) return ret;
 
     // Open the newly created target relation by calling OpenRelTable::openRel()
     // and get the target relid
@@ -460,7 +455,7 @@ int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], int tar_
 
     // If opening fails, delete the target relation by calling Schema::deleteRel()
     // and return the error value from openRel()
-    if(tarrelid != SUCCESS){
+    if(tarrelid < 0){
       Schema::deleteRel(targetRel);
       return tarrelid;
     }
@@ -470,10 +465,11 @@ int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], int tar_
 
     // Take care to reset the searchIndex before calling the project function
     // using RelCacheTable::resetSearchIndex()
+    RelCacheTable::resetSearchIndex(srcRelId);
 
     Attribute record[src_nAttrs];
 
-    while (/* BlockAccess::project(srcRelId, record) returns SUCCESS */ BlockAccess::project(srcRelId,record)) {
+    while (/* BlockAccess::project(srcRelId, record) returns SUCCESS */ BlockAccess::project(srcRelId,record)==SUCCESS) {
         // the variable `record` will contain the next record
 
         Attribute proj_record[tar_nAttrs];
@@ -493,11 +489,12 @@ int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], int tar_
             // return ret;
             Schema::closeRel(targetRel);
             Schema::deleteRel(targetRel);
+            return ret;
         }
     }
 
     // Close the targetRel by calling Schema::closeRel()
-    Schema::deleteRel(targetRel);
+    Schema::closeRel(targetRel);
 
     // return SUCCESS.
     return SUCCESS;
