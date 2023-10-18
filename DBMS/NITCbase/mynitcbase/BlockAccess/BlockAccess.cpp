@@ -206,7 +206,7 @@ int BlockAccess::renameAttribute(char relName[ATTR_SIZE], char oldName[ATTR_SIZE
     // If relation with name relName does not exist (search returns {-1,-1})
     //    return E_RELNOTEXIST;
     if(search.block==-1 && search.slot==-1){
-        E_RELEXIST;
+        E_RELNOTEXIST;
     }
     /* reset the searchIndex of the attribute catalog using
        RelCacheTable::resetSearchIndex() */
