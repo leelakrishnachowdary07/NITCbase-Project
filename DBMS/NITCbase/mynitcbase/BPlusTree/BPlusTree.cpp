@@ -156,7 +156,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
         // declare leafEntry which will be used to store an entry from leafBlk
         Index leafEntry;
 
-        while (/*index < numEntries in leafBlk*/index<leafHead.numAttrs) {
+        while (/*index < numEntries in leafBlk*/index<leafHead.numEntries) {
 
             // load entry corresponding to block and index into leafEntry
             // using IndLeaf::getEntry().
