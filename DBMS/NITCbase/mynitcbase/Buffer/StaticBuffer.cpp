@@ -142,5 +142,5 @@ int StaticBuffer::getStaticBlockType(int blockNum){
     }
     // Access the entry in block allocation map corresponding to the blockNum argument
     // and return the block type after type casting to integer.
-    return int(blockAllocMap[blockNum]);
+    return (int)blockAllocMap[blockNum];
 }

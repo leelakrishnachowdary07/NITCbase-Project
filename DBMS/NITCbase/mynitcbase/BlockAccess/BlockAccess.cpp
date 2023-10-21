@@ -474,18 +474,18 @@ int BlockAccess::search(int relId, Attribute *record, char attrName[ATTR_SIZE], 
     // if this call returns an error, return the appropriate error code
     // get rootBlock from the attribute catalog entry
     AttrCatEntry buff;
-    int ret=AttrCacheTable::getAttrCatEntry(relId,attrName,buff);
+    int ret=AttrCacheTable::getAttrCatEntry(relId,attrName,&buff);
     if(ret!=SUCCESS){
         return ret;
     }
-    rootBlock=buff.rootBlock;
+    int rootBlock=buff.rootBlock;
     /* if Index does not exist for the attribute (check rootBlock == -1) */ 
     if(rootBlock==-1){
         /* search for the record id (recid) corresponding to the attribute with
            attribute name attrName, with value attrval and satisfying the
            condition op using linearSearch()
         */
-       recId=linearSearch(recId,attrName,attrVal,op);
+       recId=linearSearch(relId,attrName,attrVal,op);
     }
 
     else {
@@ -500,15 +500,15 @@ int BlockAccess::search(int relId, Attribute *record, char attrName[ATTR_SIZE], 
 
     // if there's no record satisfying the given condition (recId = {-1, -1})
     //     return E_NOTFOUND;
-    if(recid.block==-1 && recid.slot==-1){
+    if(recId.block==-1 && recId.slot==-1){
         return E_NOTFOUND;
     }
     /* Copy the record with record id (recId) to the record buffer (record).
        For this, instantiate a RecBuffer class object by passing the recId and
        call the appropriate method to fetch the record
     */
-    RecBuffer blockbuff(recid.block);
-    blockbuff.getRecord(record,recid.slot);
+    RecBuffer blockbuff(recId.block);
+    blockbuff.getRecord(record,recId.slot);
     return SUCCESS;
 }
 int BlockAccess::deleteRelation(char relName[ATTR_SIZE]) {

@@ -7,15 +7,16 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
 
     /* get the search index corresponding to attribute with name attrName
        using AttrCacheTable::getSearchIndex(). */
-    AttrCacheTable::getSearchIndex(relId,attrName,&searchIndex);
+    int ret=AttrCacheTable::getSearchIndex(relId,attrName,&searchIndex);
 
     AttrCatEntry attrCatEntry;
     /* load the attribute cache entry into attrCatEntry using
      AttrCacheTable::getAttrCatEntry(). */
-     AttrCacheTable::getAttrCatEntry(relId,attrName,&attrCatEntry);
+     ret=AttrCacheTable::getAttrCatEntry(relId,attrName,&attrCatEntry);
 
     // declare variables block and index which will be used during search
-    int block, index;
+    int block=-1;
+    int index=-1;
 
     if (/* searchIndex == {-1, -1}*/searchIndex.block==-1 && searchIndex.index==-1) {
         // (search is done for the first time)
@@ -24,7 +25,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
         block = attrCatEntry.rootBlock;
         index = 0;
 
-        if (/* attrName doesn't have a B+ tree (block == -1)*/attrCatEntry.rootBlock==-1) {
+        if (/* attrName doesn't have a B+ tree (block == -1)*/block==-1) {
             return RecId{-1, -1};
         }
 
@@ -116,14 +117,15 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
              Hint: the helper function compareAttrs() can be used for comparing
             */
             bool flag=false;
-            int id=0;
-            while(id<intHead.numEntries){
-                int ret=internalBlk.getEntry(&intEntry,index);
+            index=0;
+            while(index<intHead.numEntries){
+                ret=internalBlk.getEntry(&intEntry,index);
                 int cmpVal=compareAttrs(intEntry.attrVal,attrVal,NUMBER);
                 if((op == EQ && cmpVal == 0) || (op == GT && cmpVal > 0) || (op == GE && cmpVal >= 0)){
                     flag=true;
+                    break;
                 }
-                id++;
+                index++;
             }
             if (/* such an entry is found*/flag) {
                 // move to the left child of that entry
@@ -133,7 +135,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
                 // move to the right child of the last entry of the block
                 // i.e numEntries - 1 th entry of the block
 
-                block =  intHead.numAttrs-1;// right child of last entry
+                block =  intEntry.rChild;// right child of last entry
             }
         }
     }
@@ -176,6 +178,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
                 // set search index to {block, index}
                 searchIndex.block=block;
                 searchIndex.index=index;
+                AttrCacheTable::setSearchIndex(relId,attrName,&searchIndex);
                 return RecId{leafEntry.block,leafEntry.slot};
 
                 // return the recId {leafEntry.block, leafEntry.slot}.

@@ -99,18 +99,13 @@ int AttrCacheTable::getSearchIndex(int relId, char attrName[ATTR_SIZE], IndexId 
   if(/*entry corresponding to the relId in the Attribute Cache Table is free*/attrCache[relId]==nullptr) {
     return E_RELNOTOPEN;
   }
-
-  for(/* each attribute corresponding to relation with relId */int i=0;i<MAX_OPEN;i++)
-  {
-    if (/* attrName/offset field of the AttrCatEntry
-        is equal to the input attrName/attrOffset */attrCache[i]->attrCatEntry.attrName==attrName)
-    {
-      //copy the searchIndex field of the corresponding Attribute Cache entry
-      //in the Attribute Cache Table to input searchIndex variable.
-      *searchIndex=attrCache[i]->searchIndex;
-
+  AttrCacheEntry *temp=AttrCacheTable::attrCache[relId];
+  while(temp){
+    if(!strcmp(temp->attrCatEntry.attrName,attrName)){
+      *searchIndex=temp->searchIndex;
       return SUCCESS;
     }
+    temp=temp->next;
   }
 
   return E_ATTRNOTEXIST;
@@ -124,17 +119,15 @@ int AttrCacheTable::getSearchIndex(int relId,int attrOffset, IndexId *searchInde
     return E_RELNOTOPEN;
   }
 
-  for(/* each attribute corresponding to relation with relId */int i=0;i<MAX_OPEN;i++)
-  {
-    if (/* attrName/offset field of the AttrCatEntry
-        is equal to the input attrName/attrOffset */attrCache[i]->attrCatEntry.offset==attrOffset)
-    {
-      //copy the searchIndex field of the corresponding Attribute Cache entry
-      //in the Attribute Cache Table to input searchIndex variable.
-      *searchIndex=attrCache[i]->searchIndex;
-
+  AttrCacheEntry *temp=AttrCacheTable::attrCache[relId];
+  int index=0;
+  while(temp){
+    if(index==attrOffset){
+      *searchIndex=temp->searchIndex;
       return SUCCESS;
     }
+    temp=temp->next;
+    index++;
   }
 
   return E_ATTRNOTEXIST;
@@ -149,17 +142,13 @@ int AttrCacheTable::setSearchIndex(int relId, char attrName[ATTR_SIZE], IndexId 
     return E_RELNOTOPEN;
   }
 
-  for(/* each attribute corresponding to relation with relId */int i=0;i<MAX_OPEN;i++)
-  {
-    if (/* attrName/offset field of the AttrCatEntry
-        is equal to the input attrName/attrOffset */attrCache[i]->attrCatEntry.attrName==attrName)
-    {
-      //copy the searchIndex field of the corresponding Attribute Cache entry
-      //in the Attribute Cache Table to input searchIndex variable.
-      attrCache[i]->searchIndex=*searchIndex;
-
+  AttrCacheEntry *temp=AttrCacheTable::attrCache[relId];
+  while(temp){
+    if(!strcmp(temp->attrCatEntry.attrName,attrName)){
+      temp->searchIndex=*searchIndex;
       return SUCCESS;
     }
+    temp=temp->next;
   }
 
   return E_ATTRNOTEXIST;
@@ -173,18 +162,15 @@ int AttrCacheTable::setSearchIndex(int relId,int attrOffset, IndexId *searchInde
   if(/*entry corresponding to the relId in the Attribute Cache Table is free*/attrCache[relId]==nullptr) {
     return E_RELNOTOPEN;
   }
-
-  for(/* each attribute corresponding to relation with relId */int i=0;i<MAX_OPEN;i++)
-  {
-    if (/* attrName/offset field of the AttrCatEntry
-        is equal to the input attrName/attrOffset */attrCache[i]->attrCatEntry.offset==attrOffset)
-    {
-      //copy the searchIndex field of the corresponding Attribute Cache entry
-      //in the Attribute Cache Table to input searchIndex variable.
-      attrCache[i]->searchIndex=*searchIndex;
-
+  AttrCacheEntry *temp=AttrCacheTable::attrCache[relId];
+  int index=0;
+  while(temp){
+    if(index==attrOffset){
+      temp->searchIndex=*searchIndex;
       return SUCCESS;
     }
+    temp=temp->next;
+    index++;
   }
 
   return E_ATTRNOTEXIST;
