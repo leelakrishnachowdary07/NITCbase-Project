@@ -191,3 +191,45 @@ int AttrCacheTable::resetSearchIndex(int relId,int attrOffset) {
   // set the search index to {-1, -1} using AttrCacheTable::setSearchIndex
   // return the value returned by setSearchIndex
 }
+int AttrCacheTable::setAttrCatEntry(int relId, char attrName[ATTR_SIZE], AttrCatEntry *attrCatBuf) {
+
+  if(/*relId is outside the range [0, MAX_OPEN-1]*/relId<0 || relId>=MAX_OPEN) {
+    return E_OUTOFBOUND;
+  }
+
+  if(/*entry corresponding to the relId in the Attribute Cache Table is free*/attrCache[relId]==nullptr) {
+    return E_RELNOTOPEN;
+  }
+  AttrCacheEntry *temp=AttrCacheTable::attrCache[relId];
+  while(temp){
+    if(temp->attrCatEntry.attrName == attrName){
+      temp->attrCatEntry=*attrCatBuf;
+      temp->dirty=true;
+      return SUCCESS;
+    }
+    temp=temp->next;
+  }
+  return E_ATTRNOTEXIST;
+}
+int AttrCacheTable::setAttrCatEntry(int relId, int attrOffset, AttrCatEntry *attrCatBuf) {
+
+  if(/*relId is outside the range [0, MAX_OPEN-1]*/relId<0 || relId>=MAX_OPEN) {
+    return E_OUTOFBOUND;
+  }
+
+  if(/*entry corresponding to the relId in the Attribute Cache Table is free*/attrCache[relId]==nullptr) {
+    return E_RELNOTOPEN;
+  }
+  AttrCacheEntry *temp=AttrCacheTable::attrCache[relId];
+  int index=0;
+  while(temp){
+    if(index == attrOffset){
+      temp->attrCatEntry=*attrCatBuf;
+      temp->dirty=true;
+      return SUCCESS;
+    }
+    temp=temp->next;
+    index++;
+  }
+  return E_ATTRNOTEXIST;
+}

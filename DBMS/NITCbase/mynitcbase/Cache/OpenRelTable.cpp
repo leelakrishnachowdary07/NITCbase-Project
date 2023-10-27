@@ -827,7 +827,7 @@ int OpenRelTable::closeRel(int relId) {
   	if (0 > relId || relId >= MAX_OPEN) return E_OUTOFBOUND;
 
   	if (tableMetaInfo[relId].free) return E_RELNOTOPEN;
-
+	/****** Releasing the Relation Cache entry of the relation ******/
 	if (RelCacheTable::relCache[relId]->dirty == true) {
 		/* Get the Relation Catalog entry from RelCacheTable::relCache
 		Then convert it to a record using RelCacheTable::relCatEntryToRecord(). */
@@ -851,10 +851,19 @@ int OpenRelTable::closeRel(int relId) {
 	//* because we are not modifying the attribute cache at this stage,
 	//* write-back is not required. We will do it in subsequent
   	//* stages when it becomes needed)
-
+	/****** Releasing the Attribute Cache entry of the relation ******/
 	AttrCacheEntry *head = AttrCacheTable::attrCache[relId];
 	AttrCacheEntry *next = head->next;
-
+	while(head){
+		if(head->dirty==true){
+			AttrCatEntry buff;
+			AttrCacheTable::getAttrCatEntry(relId,head->attrCatEntry.attrName,&buff);
+			Attribute rec[6];
+			AttrCacheTable::attrCatEntryToRecord(&buff,rec);
+			RecBuffer buf(head->recId.block);
+			buf.setRecord(rec,head->recId.slot);
+		}
+	}
 	while (next) {
 		free (head);
 		head = next;
