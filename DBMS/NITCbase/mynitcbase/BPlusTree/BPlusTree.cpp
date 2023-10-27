@@ -255,7 +255,8 @@ int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE]) {
     if (rootBlock == E_DISKFULL) {
         return E_DISKFULL;
     }
-
+    buff.rootBlock=rootBlock;
+    AttrCacheTable::setAttrCatEntry(relId,attrName,&buff);
     RelCatEntry relCatEntry;
     RelCacheTable::getRelCatEntry(relId,&relCatEntry);
     // load the relation catalog entry into relCatEntry
