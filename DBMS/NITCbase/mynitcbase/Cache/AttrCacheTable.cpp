@@ -7,6 +7,8 @@ AttrCacheEntry* AttrCacheTable::attrCache[MAX_OPEN];
 NOTE: this function expects the caller to allocate memory for `*attrCatBuf`
 */
 int AttrCacheTable::getAttrCatEntry(int relId, int attrOffset, AttrCatEntry* attrCatBuf) {
+
+  // check that relId is valid and corresponds to an open relation
   // check if 0 <= relId < MAX_OPEN and return E_OUTOFBOUND otherwise
   if(relId<0 || relId>=MAX_OPEN){
     return E_OUTOFBOUND;
@@ -19,14 +21,22 @@ int AttrCacheTable::getAttrCatEntry(int relId, int attrOffset, AttrCatEntry* att
 
   // traverse the linked list of attribute cache entries
   for (AttrCacheEntry* entry = attrCache[relId]; entry != nullptr; entry = entry->next) {
-    if (entry->attrCatEntry.offset == attrOffset) {
-      // copy entry->attrCatEntry to *attrCatBuf and return SUCCESS;
-      *attrCatBuf=entry->attrCatEntry;
+    if (entry->attrCatEntry.offset==attrOffset) {
+      strcpy(attrCatBuf->relName, entry->attrCatEntry.relName);
+      strcpy(attrCatBuf->attrName, entry->attrCatEntry.attrName);
+      
+      attrCatBuf->attrType = entry->attrCatEntry.attrType;
+      attrCatBuf->primaryFlag = entry->attrCatEntry.primaryFlag;
+      attrCatBuf->rootBlock = entry->attrCatEntry.rootBlock;
+      attrCatBuf->offset = entry->attrCatEntry.offset;
       return SUCCESS;
     }
   }
 
-  // there is no attribute at this offset
+  // iterate over the entries in the attribute cache and set attrCatBuf to the entry that
+  //    matches attrName
+
+  // no attribute with name attrName for the relation
   return E_ATTRNOTEXIST;
 }
 
@@ -44,7 +54,7 @@ void AttrCacheTable::recordToAttrCatEntry(union Attribute record[ATTRCAT_NO_ATTR
 
   // copy the rest of the fields in the record to the attrCacheEntry struct
 }
-void AttrCacheTable::attrCatEntryToRecord(AttrCatEntry* attrCatEntry,union Attribute record[ATTRCAT_NO_ATTRS]) {
+void AttrCacheTable::attrCatEntryToRecord(AttrCatEntry* attrCatEntry,Attribute record[ATTRCAT_NO_ATTRS]) {
   strcpy(record[ATTRCAT_REL_NAME_INDEX].sVal,attrCatEntry->relName);
   strcpy(record[ATTRCAT_ATTR_NAME_INDEX].sVal,attrCatEntry->attrName);
   record[ATTRCAT_ATTR_TYPE_INDEX].nVal=attrCatEntry->attrType;
@@ -200,15 +210,24 @@ int AttrCacheTable::setAttrCatEntry(int relId, char attrName[ATTR_SIZE], AttrCat
   if(/*entry corresponding to the relId in the Attribute Cache Table is free*/attrCache[relId]==nullptr) {
     return E_RELNOTOPEN;
   }
-  AttrCacheEntry *temp=AttrCacheTable::attrCache[relId];
-  while(temp){
-    if(temp->attrCatEntry.attrName == attrName){
-      temp->attrCatEntry=*attrCatBuf;
-      temp->dirty=true;
-      return SUCCESS;
+ for (AttrCacheEntry *entry = attrCache[relId]; entry != nullptr; entry = entry->next)
+    {
+        if (strcmp(entry->attrCatEntry.attrName, attrName) == 0) // matching the name
+        {
+            // TODO: copy entry->attrCatEntry to *attrCatBuf and return SUCCESS;
+            strcpy(entry->attrCatEntry.relName, attrCatBuf->relName);
+            strcpy(entry->attrCatEntry.attrName, attrCatBuf->attrName);
+
+            entry->attrCatEntry.attrType = attrCatBuf->attrType;
+            entry->attrCatEntry.primaryFlag = attrCatBuf->primaryFlag;
+            entry->attrCatEntry.rootBlock = attrCatBuf->rootBlock;
+            entry->attrCatEntry.offset = attrCatBuf->offset;
+
+            entry->dirty = true;
+
+            return SUCCESS;
+        }
     }
-    temp=temp->next;
-  }
   return E_ATTRNOTEXIST;
 }
 int AttrCacheTable::setAttrCatEntry(int relId, int attrOffset, AttrCatEntry *attrCatBuf) {
@@ -220,16 +239,23 @@ int AttrCacheTable::setAttrCatEntry(int relId, int attrOffset, AttrCatEntry *att
   if(/*entry corresponding to the relId in the Attribute Cache Table is free*/attrCache[relId]==nullptr) {
     return E_RELNOTOPEN;
   }
-  AttrCacheEntry *temp=AttrCacheTable::attrCache[relId];
-  int index=0;
-  while(temp){
-    if(index == attrOffset){
-      temp->attrCatEntry=*attrCatBuf;
-      temp->dirty=true;
-      return SUCCESS;
+  for (AttrCacheEntry *entry = attrCache[relId]; entry != nullptr; entry = entry->next)
+    {
+        if (entry->attrCatEntry.offset == attrOffset)
+        {
+            // TODO: copy entry->attrCatEntry to *attrCatBuf and return SUCCESS;
+            strcpy(entry->attrCatEntry.relName, attrCatBuf->relName);
+            strcpy(entry->attrCatEntry.attrName, attrCatBuf->attrName);
+
+            entry->attrCatEntry.attrType = attrCatBuf->attrType;
+            entry->attrCatEntry.primaryFlag = attrCatBuf->primaryFlag;
+            entry->attrCatEntry.rootBlock = attrCatBuf->rootBlock;
+            entry->attrCatEntry.offset = attrCatBuf->offset;
+
+            entry->dirty = true;
+
+            return SUCCESS;
+        }
     }
-    temp=temp->next;
-    index++;
-  }
   return E_ATTRNOTEXIST;
 }

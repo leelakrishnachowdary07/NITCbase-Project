@@ -293,6 +293,12 @@ BlockBuffer::BlockBuffer(char blockType){
     if(blockType=='R'){
       blk=REC;
     }
+    else if( blockType=='I'){
+      blk=IND_INTERNAL;
+    }
+    else if(blockType=='L'){
+      blk=IND_LEAF;
+    }
     else{
       blk=UNUSED_BLK;
     }
