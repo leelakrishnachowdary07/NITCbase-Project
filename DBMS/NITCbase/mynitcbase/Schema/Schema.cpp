@@ -17,7 +17,8 @@ int Schema::openRel(char relName[ATTR_SIZE]) {
 }
 
 int Schema::closeRel(char relName[ATTR_SIZE]) {
-  if (/* relation is relation catalog or attribute catalog */(strcmp(relName,ATTRCAT_RELNAME)==0) || (strcmp(relName,RELCAT_RELNAME)==0)) {
+    /* relation is relation catalog or attribute catalog */
+  if ((strcmp(relName,ATTRCAT_RELNAME)==0) || (strcmp(relName,RELCAT_RELNAME)==0)) {
     return E_NOTPERMITTED;
   }
 
@@ -25,7 +26,7 @@ int Schema::closeRel(char relName[ATTR_SIZE]) {
   // E_RELNOTOPEN if it is not. we will implement this later.
   int relId = OpenRelTable::getRelId(relName);
 
-  if (/* relation is not open */relId==E_RELNOTEXIST) {
+  if (/* relation is not open */relId == E_RELNOTOPEN) {
     return E_RELNOTOPEN;
   }
 
@@ -72,9 +73,9 @@ int Schema::renameAttr(char *relName, char *oldAttrName, char *newAttrName) {
 int Schema::createRel(char relName[],int nAttrs, char attrs[][ATTR_SIZE],int attrtype[]){
 
     // declare variable relNameAsAttribute of type Attribute
-    Attribute relNameAsAttribute;
     // copy the relName into relNameAsAttribute.sVal
-    strcpy(relNameAsAttribute.sVal,relName);
+    Attribute relNameAsAttribute;
+    strcpy( relNameAsAttribute.sVal, relName);
 
     // declare a variable targetRelId of type RecId
     RecId targetRelId;
@@ -201,8 +202,8 @@ int Schema::createIndex(char relName[ATTR_SIZE],char attrName[ATTR_SIZE]){
       return E_NOTPERMITTED;
     }
     // get the relation's rel-id using OpenRelTable::getRelId() method
-    int relId=OpenRelTable::getRelId(relName);
-    if(relId==E_RELNOTOPEN){
+    int relId = OpenRelTable::getRelId(relName);
+    if(relId == E_RELNOTOPEN){
       return E_RELNOTOPEN;
     }
     // if relation is not open in open relation table, return E_RELNOTOPEN
@@ -249,6 +250,6 @@ int Schema::dropIndex(char *relName, char *attrName) {
     // set rootBlock = -1 in the attribute cache entry of the attribute using
     // AttrCacheTable::setAttrCatEntry()
     buff.rootBlock=-1;
-    AttrCacheTable::getAttrCatEntry(relId,attrName,&buff);
+    AttrCacheTable::setAttrCatEntry(relId,attrName,&buff);
     return SUCCESS;
 }
