@@ -120,16 +120,16 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
              Hint: the helper function compareAttrs() can be used for comparing
             */
             bool flag=false;
-            index=0;
-            while(index<intHead.numEntries){
-                ret=internalBlk.getEntry(&intEntry,index);
+            int e_index=0;
+            while(e_index<intHead.numEntries){
+                ret=internalBlk.getEntry(&intEntry,e_index);
                 int cmpVal=compareAttrs(intEntry.attrVal,attrVal,NUMBER);
                 count++;
                 if((op == EQ && cmpVal == 0) || (op == GT && cmpVal > 0) || (op == GE && cmpVal >= 0)){
                     flag=true;
                     break;
                 }
-                index++;
+                e_index++;
             }
             if (/* such an entry is found*/flag) {
                 // move to the left child of that entry
