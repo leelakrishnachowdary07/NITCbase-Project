@@ -118,7 +118,7 @@ RecId BlockAccess::linearSearch(int relId, char attrName[ATTR_SIZE], union Attri
             */
            RecId searchindex={block,slot};  
            RelCacheTable::setSearchIndex(relId,&searchindex);
-            std::cout<< "No of comparisions using Linear Search: "<<count<< " ";
+            //std::cout<< "No of comparisions using Linear Search: "<<count<< " ";
             return RecId{block, slot};
         }
 
@@ -126,7 +126,7 @@ RecId BlockAccess::linearSearch(int relId, char attrName[ATTR_SIZE], union Attri
     }
 
     // no record in the relation with Id relid satisfies the given condition
-    std::cout<< "No of comparisions using Linear Search: "<<count<< " ";
+    //std::cout<< "No of comparisions using Linear Search: "<<count<< " ";
     return RecId{-1, -1};
 }
 int BlockAccess::renameRelation(char oldName[ATTR_SIZE], char newName[ATTR_SIZE]){
