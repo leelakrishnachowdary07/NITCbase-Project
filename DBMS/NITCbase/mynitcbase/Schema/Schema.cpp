@@ -198,9 +198,8 @@ int Schema::createIndex(char relName[ATTR_SIZE],char attrName[ATTR_SIZE]){
         // return E_NOTPERMITTED
         // (check if the relation names are either "RELATIONCAT" and "ATTRIBUTECAT".
         // you may use the following constants: RELCAT_NAME and ATTRCAT_NAME)
-    if(!strcmp(relName,"RELATIONCAT") || !strcmp(relName,"ATTRIBUTECAT")){
-      return E_NOTPERMITTED;
-    }
+   if (strcmp(relName, RELCAT_RELNAME) == 0 || strcmp(relName, ATTRCAT_RELNAME) == 0)
+        return E_NOTPERMITTED;
     // get the relation's rel-id using OpenRelTable::getRelId() method
     int relId = OpenRelTable::getRelId(relName);
     if(relId == E_RELNOTOPEN){
@@ -217,9 +216,8 @@ int Schema::dropIndex(char *relName, char *attrName) {
         // return E_NOTPERMITTED
         // (check if the relation names are either "RELATIONCAT" and "ATTRIBUTECAT".
         // you may use the following constants: RELCAT_NAME and ATTRCAT_NAME)
-    if(!strcmp(relName,"RELATIONCAT") || !strcmp(relName,"ATTRIBUTECAT")){
-      return E_NOTPERMITTED;
-    }
+    if (strcmp(relName, RELCAT_RELNAME) == 0 || strcmp(relName, ATTRCAT_RELNAME) == 0)
+        return E_NOTPERMITTED;
     // get the rel-id using OpenRelTable::getRelId()
 
     // if relation is not open in open relation table, return E_RELNOTOPEN

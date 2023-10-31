@@ -1,6 +1,7 @@
 #include "BPlusTree.h"
 #include <iostream>
 #include <cstring>
+
 RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attrVal, int op) 
 {
     int count=0;
@@ -27,7 +28,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
         index = 0;
     /* attrName doesn't have a B+ tree (block == -1)*/
         if (block == -1) {
-            std::cout<<count;
+            
             return RecId{-1, -1};
         }
 
@@ -57,7 +58,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
 
             if (block == -1) {
                 // (end of linked list reached - the search is done.)
-                std::cout<<count;
+                
                 return RecId{-1, -1};
             }
         }
@@ -123,10 +124,9 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
             */
             bool flag=false;
             int e_index=0;
-            while(index < intHead.numEntries){
+            while(e_index < intHead.numEntries){
                 ret = internalBlk.getEntry(&intEntry, e_index);
                 int cmpVal = compareAttrs(intEntry.attrVal, attrVal, attrCatEntry.attrType);
-                count++;
                 if((op == EQ && cmpVal >= 0) || (op == GE && cmpVal >= 0) || (op == GT && cmpVal > 0)){
                     flag=true;
                     break;
@@ -174,7 +174,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
 
             /* comparison between leafEntry's attribute value
  and input attrVal using compareAttrs()*/
-            count++;
+            ;
             if (
                 (op == EQ && cmpVal == 0) ||
                 (op == LE && cmpVal <= 0) ||
@@ -189,7 +189,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
                 searchIndex.block=block;
                 searchIndex.index=index;
                 AttrCacheTable::setSearchIndex(relId, attrName, &searchIndex);
-                std::cout<<count;
+                
                 return RecId{leafEntry.block, leafEntry.slot};
 
                 // return the recId {leafEntry.block, leafEntry.slot}.
@@ -197,7 +197,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
             } else if ((op == EQ || op == LE || op == LT) && cmpVal > 0) {
                 /*future entries will not satisfy EQ, LE, LT since the values
                     are arranged in ascending order in the leaves */
-                std::cout<<count;
+                
                 return RecId {-1, -1};
             }
 
@@ -219,10 +219,9 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
     }
 
     // no entry satisying the op was found; return the recId {-1,-1}
-    std::cout<<count;
+    
     return RecId{-1, -1};
 }
-
 int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE]) {
 
     // if relId is either RELCAT_RELID or ATTRCAT_RELID:
