@@ -1,5 +1,5 @@
 #include "BPlusTree.h"
-#include<iostream>>
+#include<iostream>
 #include <cstring>
 RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attrVal, int op) {
     int count=0;
@@ -27,7 +27,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
         index = 0;
 
         if (/* attrName doesn't have a B+ tree (block == -1)*/block==-1) {
-            std::cout<<count;
+            std::cout<<count<< " ";
             return RecId{-1, -1};
         }
 
@@ -57,7 +57,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
 
             if (block == -1) {
                 // (end of linked list reached - the search is done.)
-                std::cout<<count;
+                std::cout<<count<< " ";
                 return RecId{-1, -1};
             }
         }
@@ -183,7 +183,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
                 searchIndex.block=block;
                 searchIndex.index=index;
                 AttrCacheTable::setSearchIndex(relId,attrName,&searchIndex);
-                std::cout<<count;
+                std::cout<<count<< " ";
                 return RecId{leafEntry.block,leafEntry.slot};
 
                 // return the recId {leafEntry.block, leafEntry.slot}.
@@ -191,7 +191,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
             } else if ((op == EQ || op == LE || op == LT) && cmpVal > 0) {
                 /*future entries will not satisfy EQ, LE, LT since the values
                     are arranged in ascending order in the leaves */
-                std::cout<<count;
+                std::cout<<count<< " ";
                 return RecId {-1, -1};
             }
 
@@ -213,6 +213,6 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
     }
 
     // no entry satisying the op was found; return the recId {-1,-1}
-    std::cout<<count;
+    std::cout<<count<<" ";
     return RecId{-1,-1};
 }

@@ -1,11 +1,13 @@
 #include "BlockAccess.h"
-
+#include<iostream>
 #include <cstring>
 RecId BlockAccess::linearSearch(int relId, char attrName[ATTR_SIZE], union Attribute attrVal, int op) {
     // get the previous search index of the relation relId from the relation cache
     // (use RelCacheTable::getSearchIndex() function)
     RecId prevRecId;
     RelCacheTable::getSearchIndex(relId,&prevRecId);
+
+    int count=0;
 
     // let block and slot denote the record id of the record being currently checked
     int block=-1;
@@ -94,6 +96,7 @@ RecId BlockAccess::linearSearch(int relId, char attrName[ATTR_SIZE], union Attri
         int cmpVal;  // will store the difference between the attributes
         // set cmpVal using compareAttrs()
         cmpVal=compareAttrs(attr[attrcachebuff.attrCatEntry.offset],attrVal,attrcachebuff.attrCatEntry.attrType);
+        count++;
 
         /* Next task is to check whether this record satisfies the given condition.
            It is determined based on the output of previous comparison and
@@ -115,7 +118,7 @@ RecId BlockAccess::linearSearch(int relId, char attrName[ATTR_SIZE], union Attri
             */
            RecId searchindex={block,slot};  
            RelCacheTable::setSearchIndex(relId,&searchindex);
-
+            std::cout<< "No of comparisions using Linear Search: "<<count<< " ";
             return RecId{block, slot};
         }
 
@@ -123,6 +126,7 @@ RecId BlockAccess::linearSearch(int relId, char attrName[ATTR_SIZE], union Attri
     }
 
     // no record in the relation with Id relid satisfies the given condition
+    std::cout<< "No of comparisions using Linear Search: "<<count<< " ";
     return RecId{-1, -1};
 }
 int BlockAccess::renameRelation(char oldName[ATTR_SIZE], char newName[ATTR_SIZE]){
