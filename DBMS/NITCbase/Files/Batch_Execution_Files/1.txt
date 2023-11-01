@@ -1,0 +1,36 @@
+echo ----Creating new relations----
+CREATE TABLE Events(id NUM, title STR, location STR);
+CREATE TABLE Locations(name STR, capacity NUM);
+CREATE TABLE Participants(regNo NUM, event STR);
+echo ----populating new relations----
+OPEN TABLE Events;
+INSERT INTO Events VALUES FROM events.csv;
+OPEN TABLE Locations;
+INSERT INTO Locations VALUES FROM locations.csv;
+OPEN TABLE Participants;
+INSERT INTO Participants VALUES FROM participants.csv;
+echo --------------------------------------------
+SELECT location from Events into temp1 where location=Audi;
+open table temp1;
+echo ----JOINING----
+SELECT name FROM Locations JOIN temp1 INTO EventLocations WHERE Locations.name = temp1.location;
+echo ----DROPPING TEMPORARY RELATIONS----
+CLOSE TABLE temp1;
+DROP TABLE temp1;
+SELECT regNo, event FROM Participants JOIN Events INTO AudiPeople WHERE Participants.event = Events.title;
+SELECT regNo, event, location FROM Participants JOIN Events INTO temp3 WHERE Participants.event = Events.title;
+OPEN TABLE temp3;
+SELECT regNo, event, capacity FROM  Locations JOIN temp3 INTO temp1 WHERE Locations.name = temp3.location;
+OPEN TABLE temp1;
+SELECT regNo, event, capacity FROM temp1 INTO temp2 WHERE capacity > 100;
+OPEN TABLE temp2;
+SELECT regNo, event FROM temp2 INTO MiniEventPeople WHERE capacity < 200;
+echo ----DROPPING TEMPORARY RELATIONS----
+CLOSE TABLE temp1;
+CLOSE TABLE temp3;
+CLOSE TABLE temp2;
+DROP TABLE temp1;
+DROP TABLE temp3;
+DROP TABLE temp2;
+echo     
+echo DONE -------------------------------
