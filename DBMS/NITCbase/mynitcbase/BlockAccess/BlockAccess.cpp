@@ -744,8 +744,12 @@ NOTE: the caller is expected to allocate space for the argument `record` based
 int BlockAccess::project(int relId, Attribute *record) {
     // get the previous search index of the relation relId from the relation
     // cache (use RelCacheTable::getSearchIndex() function)
+    int ret;
     RecId prevRecId;
-    RelCacheTable::getSearchIndex(relId,&prevRecId);
+    ret=RelCacheTable::getSearchIndex(relId,&prevRecId);
+    if(ret!=SUCCESS){
+        return ret;
+    }
 
     // declare block and slot which will be used to store the record id of the
     // slot we need to check.

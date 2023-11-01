@@ -588,15 +588,15 @@ int Algebra::join(char srcRelation1[ATTR_SIZE], char srcRelation2[ATTR_SIZE], ch
       strcpy(targetRelAttrNames[i],temp1.attrName);
       targetRelAttrTypes[i]=temp1.attrType;
     }
-    int attr2offset=0;
+    int flag=0;
     for(int i=0;i<numOfAttributes2;i++){
       AttrCacheTable::getAttrCatEntry(srcRelId2,i,&temp2);
       if(strcmp(attribute2,temp2.attrName)==0){
-        attr2offset=i;
+        flag=1;
       }
       else{
-        strcpy(targetRelAttrNames[i+numOfAttributes1],temp2.attrName);
-        targetRelAttrTypes[i+numOfAttributes1]=temp2.attrType;
+        strcpy(targetRelAttrNames[i+numOfAttributes1-flag],temp2.attrName);
+        targetRelAttrTypes[i+numOfAttributes1-flag]=temp2.attrType;
       }
     }
     // create the target relation using the Schema::createRel() function
@@ -622,6 +622,8 @@ int Algebra::join(char srcRelation1[ATTR_SIZE], char srcRelation2[ATTR_SIZE], ch
     Attribute record2[numOfAttributes2];
     Attribute targetRecord[numOfAttributesInTarget];
 
+    RelCacheTable::resetSearchIndex(srcRelId1);
+
     // this loop is to get every record of the srcRelation1 one by one
     while (BlockAccess::project(srcRelId1, record1) == SUCCESS) {
 
@@ -631,7 +633,7 @@ int Algebra::join(char srcRelation1[ATTR_SIZE], char srcRelation2[ATTR_SIZE], ch
 
         // reset the search index of `attribute2` in the attribute cache
         // using AttrCacheTable::resetSearchIndex()
-        AttrCacheTable::resetSearchIndex(srcRelId2,srcRelation2);
+        AttrCacheTable::resetSearchIndex(srcRelId2,attribute2);
 
         // this loop is to get every record of the srcRelation2 which satisfies
         //the following condition:
@@ -643,10 +645,15 @@ int Algebra::join(char srcRelation1[ATTR_SIZE], char srcRelation2[ATTR_SIZE], ch
             for(int i=0;i<numOfAttributes1;i++){
               targetRecord[i]=record1[i];
             }
+            flag=0;
             for(int i=0;i<numOfAttributes2;i++){
-              if(i!=attr2offset){
-                targetRecord[i+numOfAttributes1]=record2[i];
+              if(i==attrCatEntry2.offset){
+                flag=1;
               }
+              else{
+                targetRecord[i+numOfAttributes1-flag]=record2[i];
+              }
+              
             }
 
             // insert the current record into the target relation by calling
@@ -665,6 +672,6 @@ int Algebra::join(char srcRelation1[ATTR_SIZE], char srcRelation2[ATTR_SIZE], ch
     }
 
     // close the target relation by calling OpenRelTable::closeRel()
-    OpenRelTable::closeRel(tarrelid);
+    //OpenRelTable::closeRel(tarrelid);
     return SUCCESS;
 }

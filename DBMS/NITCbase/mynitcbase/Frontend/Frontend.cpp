@@ -96,7 +96,8 @@ int Frontend::select_attrlist_from_join_where(char relname_source_one[ATTR_SIZE]
                                               char join_attr_one[ATTR_SIZE], char join_attr_two[ATTR_SIZE],
                                               int attr_count, char attr_list[][ATTR_SIZE]) {
   // Algebra::join + project
-  int ret = Algebra::join(relname_source_one, relname_source_two,"temp_relation", join_attr_one, join_attr_two);
+  int ret = Algebra::join(relname_source_one, relname_source_two, 
+							"temp_relation", join_attr_one, join_attr_two);
 	if (ret != SUCCESS) return ret;
 
 	ret = Algebra::project("temp_relation", relname_target, attr_count, attr_list);
