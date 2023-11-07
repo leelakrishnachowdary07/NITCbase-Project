@@ -1,733 +1,791 @@
-#include "Algebra.h"
+#include "BPlusTree.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <cstring>
-#include <iostream>
 
-/* used to select all the records that satisfy a condition.
-the arguments of the function are
-* srcRel - the source relation we want to select from
-* targetRel - the relation we want to select into. (ignore for now)
-* attr - the attribute that the condition is checking
-* op - the operator of the condition
-* strVal - the value that we want to compare against (represented as a string)
-*/
-int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], 
-                    char attr[ATTR_SIZE], int op, char strVal[ATTR_SIZE]) 
-{
-    // get the srcRel's rel-id (let it be srcRelid), using OpenRelTable::getRelId()
-    // if srcRel is not open in open relation table, return E_RELNOTOPEN
-    
-    int srcRelId = OpenRelTable::getRelId(srcRel); // we'll implement this later
-    if (srcRelId == E_RELNOTOPEN) return E_RELNOTOPEN;
+RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attrVal, int op) {
+    // declare searchIndex which will be used to store search index for attrName.
+    IndexId searchIndex;
 
-    // get the attr-cat entry for attr, using AttrCacheTable::getAttrCatEntry()
-    // if getAttrcatEntry() call fails return E_ATTRNOTEXIST
+    /* get the search index corresponding to attribute with name attrName
+       using AttrCacheTable::getSearchIndex(). */
+    AttrCacheTable::getSearchIndex(relId,attrName,&searchIndex);
+
     AttrCatEntry attrCatEntry;
-    int ret = AttrCacheTable::getAttrCatEntry(srcRelId, attr, &attrCatEntry);
+    /* load the attribute cache entry into attrCatEntry using
+     AttrCacheTable::getAttrCatEntry(). */
+    AttrCacheTable::getAttrCatEntry(relId,attrName,&attrCatEntry);
 
-    if (ret == E_ATTRNOTEXIST) return E_ATTRNOTEXIST;
+    // declare variables block and index which will be used during search
+    int block, index;
 
-    /*** Convert strVal to an attribute of data type NUMBER or STRING ***/
+    if (searchIndex.block==-1 && searchIndex.index==-1) {
+        // (search is done for the first time)
 
-    // TODO: Convert strVal (string) to an attribute of data type NUMBER or STRING 
-    int type = attrCatEntry.attrType;
-    Attribute attrVal;
-    if (type == NUMBER)
-    {
-        if (isNumber(strVal)) // the isNumber() function is implemented below
-            attrVal.nVal = atof(strVal);
-        else
-            return E_ATTRTYPEMISMATCH;
-    }
-    else if (type == STRING)
-        strcpy(attrVal.sVal, strVal);
+        // start the search from the first entry of root.
+        block = attrCatEntry.rootBlock;
+        index = 0;
 
-    /*** Creating and opening the target relation ***/
-    // Prepare arguments for createRel() in the following way:
-    // get RelcatEntry of srcRel using RelCacheTable::getRelCatEntry()
-    RelCatEntry relCatEntryBuffer;
-    RelCacheTable::getRelCatEntry(srcRelId, &relCatEntryBuffer);
-
-    int srcNoAttrs =  relCatEntryBuffer.numAttrs;
-
-    /* let attr_names[src_nAttrs][ATTR_SIZE] be a 2D array of type char
-        (will store the attribute names of rel). */
-    char srcAttrNames [srcNoAttrs][ATTR_SIZE];
-
-    // let attr_types[src_nAttrs] be an array of type int
-    int srcAttrTypes [srcNoAttrs];
-
-    /*iterate through 0 to src_nAttrs-1 :
-        get the i'th attribute's AttrCatEntry using AttrCacheTable::getAttrCatEntry()
-        fill the attr_names, attr_types arrays that we declared with the entries
-        of corresponding attributes
-    */
-    for (int attrIndex = 0; attrIndex < srcNoAttrs; attrIndex++) {
-        AttrCatEntry attrCatEntryBuffer;
-        AttrCacheTable::getAttrCatEntry(srcRelId, attrIndex, &attrCatEntryBuffer);
-
-        strcpy (srcAttrNames[attrIndex], attrCatEntryBuffer.attrName);
-        srcAttrTypes[attrIndex] = attrCatEntryBuffer.attrType;
-    }
-
-    /* Create the relation for target relation by calling Schema::createRel()
-       by providing appropriate arguments */
-    // if the createRel returns an error code, then return that value.
-
-    ret = Schema::createRel(targetRel, srcNoAttrs, srcAttrNames, srcAttrTypes);
-    if (ret != SUCCESS) return ret;
-
-    /* Open the newly created target relation by calling OpenRelTable::openRel()
-       method and store the target relid */
-    /* If opening fails, delete the target relation by calling Schema::deleteRel()
-       and return the error value returned from openRel() */
-    int targetRelId = OpenRelTable::openRel(targetRel);
-    if (targetRelId < 0 || targetRelId >= MAX_OPEN) return targetRelId;
-
-    /*** Selecting and inserting records into the target relation ***/
-    /* Before calling the search function, reset the search to start from the
-       first using RelCacheTable::resetSearchIndex() */
-    // RelCacheTable::resetSearchIndex(srcRelId);
-
-    Attribute record[srcNoAttrs];
-
-    /*
-        The BlockAccess::search() function can either do a linearSearch or
-        a B+ tree search. Hence, reset the search index of the relation in the
-        relation cache using RelCacheTable::resetSearchIndex().
-        Also, reset the search index in the attribute cache for the select
-        condition attribute with name given by the argument `attr`. Use
-        AttrCacheTable::resetSearchIndex().
-        Both these calls are necessary to ensure that search begins from the
-        first record.
-    */
-
-    RelCacheTable::resetSearchIndex(srcRelId);
-    AttrCacheTable::resetSearchIndex(srcRelId, attr);
-
-    // read every record that satisfies the condition by repeatedly calling
-    // BlockAccess::search() until there are no more records to be read
-
-    while (BlockAccess::search(srcRelId, record, attr, attrVal, op) == SUCCESS) 
-    {
-        ret = BlockAccess::insert(targetRelId, record);
-
-        // if (insert fails) {
-        //     close the targetrel(by calling Schema::closeRel(targetrel))
-        //     delete targetrel (by calling Schema::deleteRel(targetrel))
-        //     return ret;
-        // }
-
-        if (ret != SUCCESS) 
-        {
-            Schema::closeRel(targetRel);
-            Schema::deleteRel(targetRel);
-            return ret;
+        if (block==-1) {
+            return RecId{-1, -1};
         }
-    }
 
-    // Close the targetRel by calling closeRel() method of schema layer
-    Schema::closeRel(targetRel);
+    } else {
+        /*a valid searchIndex points to an entry in the leaf index of the attribute's
+        B+ Tree which had previously satisfied the op for the given attrVal.*/
 
-    return SUCCESS;
-}
+        block = searchIndex.block;
+        index = searchIndex.index + 1;  // search is resumed from the next index.
 
-// int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], 
-//                         char attrName[ATTR_SIZE], int op, char strVal[ATTR_SIZE]) {
-//     // get the srcRel's rel-id (let it be srcRelid), using OpenRelTable::getRelId()
-//     // if srcRel is not open in open relation table, return E_RELNOTOPEN
+        // load block into leaf using IndLeaf::IndLeaf().
+        IndLeaf leaf(block);
 
-//     int srcRelId = OpenRelTable::getRelId(srcRel); // we'll implement this later
-//     if (srcRelId == E_RELNOTOPEN) return E_RELNOTOPEN;
+        // declare leafHead which will be used to hold the header of leaf.
+        HeadInfo leafHead;
 
-//     // get the attr-cat entry for attr, using AttrCacheTable::getAttrCatEntry()
-//     // if getAttrcatEntry() call fails return E_ATTRNOTEXIST
+        // load header into leafHead using BlockBuffer::getHeader().
+        leaf.getHeader(&leafHead);
 
-//     AttrCatEntry attrCatEntry;
-//     int ret = AttrCacheTable::getAttrCatEntry(srcRelId, attrName, &attrCatEntry);
+        if (index >= leafHead.numEntries) {
+            /* (all the entries in the block has been searched; search from the
+            beginning of the next leaf index block. */
 
-//     /*** Convert strVal to an attribute of data type NUMBER or STRING ***/
+            // update block to rblock of current block and index to 0.
+            block=leafHead.rblock;
+            index=0;
 
-//     Attribute attrVal;
-//     int type = attrCatEntry.attrType;
-
-//     if (type == NUMBER)
-//     {
-//         // if the input argument strVal can be converted to a number
-//         // (check this using isNumber() function)
-//         if (isNumber(strVal))
-//         {
-//             // convert strVal to double and store it at attrVal.nVal using atof()
-//             attrVal.nVal = atof (strVal);
-//         }
-//         else
-//         {
-//             return E_ATTRTYPEMISMATCH;
-//         }
-//     }
-//     else if (type == STRING)
-//     {
-//         // copy strVal to attrVal.sVal
-//         strcpy (attrVal.sVal, strVal);
-//     }
-
-//     /*** Creating and opening the target relation ***/
-//     // Prepare arguments for createRel() in the following way:
-//     // get RelcatEntry of srcRel using RelCacheTable::getRelCatEntry()
-//     RelCatEntry relCatEntryBuffer;
-//     RelCacheTable::getRelCatEntry(srcRelId, &relCatEntryBuffer);
-
-//     int srcNoAttrs = relCatEntryBuffer.numAttrs;
-
-//     /* let attr_names[src_nAttrs][ATTR_SIZE] be a 2D array of type char
-//         (will store the attribute names of rel). */
-//     char srcAttrNames [srcNoAttrs][ATTR_SIZE];
-
-//     // let attr_types[src_nAttrs] be an array of type int
-//     int srcAttrTypes [srcNoAttrs];
-
-//     /*iterate through 0 to src_nAttrs-1 :
-//         get the i'th attribute's AttrCatEntry using AttrCacheTable::getAttrCatEntry()
-//         fill the attr_names, attr_types arrays that we declared with the entries
-//         of corresponding attributes
-//     */
-//    for (int attrIndex = 0; attrIndex < srcNoAttrs; attrIndex++) {
-//         AttrCatEntry attrCatEntryBuffer;
-//         AttrCacheTable::getAttrCatEntry(srcRelId, attrIndex, &attrCatEntryBuffer);
-
-//         strcpy (srcAttrNames[attrIndex], attrCatEntryBuffer.attrName);
-//         srcAttrTypes[attrIndex] = attrCatEntryBuffer.attrType;
-//     }
-
-//     /* Create the relation for target relation by calling Schema::createRel()
-//        by providing appropriate arguments */
-//     // if the createRel returns an error code, then return that value.
-//     ret = Schema::createRel(targetRel, srcNoAttrs, srcAttrNames, srcAttrTypes);
-//     if (ret != SUCCESS) return ret;
-
-//     /* Open the newly created target relation by calling OpenRelTable::openRel()
-//        method and store the target relid */
-//     /* If opening fails, delete the target relation by calling Schema::deleteRel()
-//        and return the error value returned from openRel() */
-
-//     int targetRelId = OpenRelTable::openRel(targetRel);
-//     if (targetRelId < 0 || targetRelId >= MAX_OPEN) return targetRelId;
-
-//     /*** Selecting and inserting records into the target relation ***/
-//     /* Before calling the search function, reset the search to start from the
-//        first using RelCacheTable::resetSearchIndex() */
-
-//     Attribute record[srcNoAttrs];
-
-//     /*
-//         The BlockAccess::search() function can either do a linearSearch or
-//         a B+ tree search. Hence, reset the search index of the relation in the
-//         relation cache using RelCacheTable::resetSearchIndex().
-//         Also, reset the search index in the attribute cache for the select
-//         condition attribute with name given by the argument `attr`. Use
-//         AttrCacheTable::resetSearchIndex().
-//         Both these calls are necessary to ensure that search begins from the
-//         first record.
-//     */
-//     RelCacheTable::resetSearchIndex(srcRelId);
-//     AttrCacheTable::resetSearchIndex(srcRelId, attrName);
-
-//     // read every record that satisfies the condition by repeatedly calling
-//     // BlockAccess::search() until there are no more records to be read
-
-//     while (BlockAccess::search(srcRelId, record, attrName, attrVal, op) == SUCCESS) {
-
-//         ret = BlockAccess::insert(targetRelId, record);
-
-//         // if (insert fails) {
-//         //     close the targetrel(by calling Schema::closeRel(targetrel))
-//         //     delete targetrel (by calling Schema::deleteRel(targetrel))
-//         //     return ret;
-//         // }
-
-//         if (ret != SUCCESS) 
-//         {
-//             Schema::closeRel(targetRel);
-//             Schema::deleteRel(targetRel);
-//             return ret;
-//         }
-//     }
-
-//     // Close the targetRel by calling closeRel() method of schema layer
-//     Schema::closeRel(targetRel);
-
-//     return SUCCESS;
-// }
-
-int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], int tar_nAttrs, char tar_Attrs[][ATTR_SIZE]) 
-{
-    int srcRelId = OpenRelTable::getRelId(srcRel); // srcRel's rel-id (use OpenRelTable::getRelId() function
-
-    // if srcRel is not open in open relation table, return E_RELNOTOPEN
-    if (srcRelId < 0 || srcRelId >= MAX_OPEN) return E_RELNOTOPEN;
-
-    // get RelCatEntry of srcRel using RelCacheTable::getRelCatEntry()
-    RelCatEntry relCatEntryBuffer;
-    RelCacheTable::getRelCatEntry(srcRelId, &relCatEntryBuffer);
-
-    // get the no. of attributes present in relation from the fetched RelCatEntry.
-    int srcNoAttrs = relCatEntryBuffer.numAttrs;
-
-    // declare attr_offset[tar_nAttrs] an array of type int.
-    // where i-th entry will store the offset in a record of srcRel for the
-    // i-th attribute in the target relation.
-    int attrOffset [tar_nAttrs];
-    // for (int attrIndex = 0; attrIndex < tar_nAttrs; attrIndex++) {
-    //     attrOffset[attrIndex] = AttrCacheTable::getAttributeOffset(srcRelId, tar_Attrs[attrIndex]);
-    //     if (attrOffset[attrIndex] < 0) return attrOffset[attrIndex];
-    // }
-
-    // let attr_types[tar_nAttrs] be an array of type int.
-    // where i-th entry will store the type of the i-th attribute in the target relation.
-    int attrTypes [tar_nAttrs];
-    
-    /*** Checking if attributes of target are present in the source relation
-         and storing its offsets and types ***/
-
-    /*iterate through 0 to tar_nAttrs-1 :
-        - get the attribute catalog entry of the attribute with name tar_attrs[i].
-        - if the attribute is not found return E_ATTRNOTEXIST
-        - fill the attr_offset, attr_types arrays of target relation from the
-          corresponding attribute catalog entries of source relation
-    */
-    
-    for (int attrIndex = 0; attrIndex < tar_nAttrs; attrIndex++) {
-        attrOffset[attrIndex] = AttrCacheTable::getAttributeOffset(srcRelId, tar_Attrs[attrIndex]);
-        if (attrOffset[attrIndex] < 0) return attrOffset[attrIndex];
-
-        AttrCatEntry attrCatEntryBuffer;
-        AttrCacheTable::getAttrCatEntry(srcRelId, tar_Attrs[attrIndex], &attrCatEntryBuffer);
-
-        attrTypes[attrIndex] = attrCatEntryBuffer.attrType;
-    }
-
-    /*** Creating and opening the target relation ***/
-
-    // Create a relation for target relation by calling Schema::createRel()
-    int ret = Schema::createRel(targetRel, tar_nAttrs, tar_Attrs, attrTypes);
-
-    // if the createRel returns an error code, then return that value.
-    if (ret != SUCCESS) return ret;
-
-    // Open the newly created target relation by calling OpenRelTable::openRel()
-    // and get the target relid
-    int targetRelId = OpenRelTable::openRel(targetRel);
-
-    // If opening fails, delete the target relation by calling Schema::deleteRel()
-    // and return the error value from openRel()
-
-    if (targetRelId < 0)
-    {
-        Schema::deleteRel (targetRel);
-        return targetRelId;
-    }
-
-    /*** Inserting projected records into the target relation ***/
-
-    // Take care to reset the searchIndex before calling the project function
-    // using RelCacheTable::resetSearchIndex()
-    RelCacheTable::resetSearchIndex(srcRelId);
-
-    Attribute record[srcNoAttrs];
-
-    while (BlockAccess::project(srcRelId, record) == SUCCESS) {
-        // the variable `record` will contain the next record
-        Attribute proj_record[tar_nAttrs];
-
-        //iterate through 0 to tar_attrs-1:
-        //    proj_record[attr_iter] = record[attr_offset[attr_iter]]
-
-        for (int attrIndex = 0; attrIndex < tar_nAttrs; attrIndex++)
-            proj_record[attrIndex] = record[attrOffset[attrIndex]];
-
-
-        ret = BlockAccess::insert(targetRelId, proj_record);
-
-        if (ret != SUCCESS) {
-            // close the targetrel by calling Schema::closeRel()
-            // delete targetrel by calling Schema::deleteRel()
-            // return ret;
-
-            Schema::closeRel(targetRel);
-            Schema::deleteRel(targetRel);
-
-            return ret;
-        }
-    }
-
-    // Close the targetRel by calling Schema::closeRel()
-    Schema::closeRel(targetRel);
-
-    return SUCCESS;
-}
-
-int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE]) 
-{
-    int srcRelId = OpenRelTable::getRelId(srcRel); // srcRel's rel-id (use OpenRelTable::getRelId() function
-
-    // if srcRel is not open in open relation table, return E_RELNOTOPEN
-    if (srcRelId < 0 || srcRelId >= MAX_OPEN) return E_RELNOTOPEN;
-
-    // get RelCatEntry of srcRel using RelCacheTable::getRelCatEntry()
-    RelCatEntry relCatEntryBuffer;
-    RelCacheTable::getRelCatEntry(srcRelId, &relCatEntryBuffer);
-
-    // get the no. of attributes present in relation from the fetched RelCatEntry.
-    int srcNoAttrs = relCatEntryBuffer.numAttrs;
-
-    // attrNames and attrTypes will be used to store the attribute names
-    // and types of the source relation respectively
-    char attrNames[srcNoAttrs][ATTR_SIZE];
-    int attrTypes[srcNoAttrs];
-
-    /*iterate through every attribute of the source relation :
-        - get the AttributeCat entry of the attribute with offset.
-          (using AttrCacheTable::getAttrCatEntry())
-        - fill the arrays `attrNames` and `attrTypes` that we declared earlier
-          with the data about each attribute
-    */
-
-    for (int attrIndex = 0; attrIndex < srcNoAttrs; attrIndex++) {
-        AttrCatEntry attrCatEntryBuffer;
-        AttrCacheTable::getAttrCatEntry(srcRelId, attrIndex, &attrCatEntryBuffer);
-
-        strcpy (attrNames[attrIndex], attrCatEntryBuffer.attrName);
-        attrTypes[attrIndex] = attrCatEntryBuffer.attrType;
-    }
-
-    /*** Creating and opening the target relation ***/
-
-    // Create a relation for target relation by calling Schema::createRel()
-    int ret = Schema::createRel(targetRel, srcNoAttrs, attrNames, attrTypes);
-    
-    // if the createRel returns an error code, then return that value.
-    if (ret != SUCCESS) return ret;
-
-    // Open the newly created target relation by calling OpenRelTable::openRel()
-    // and get the target relid
-    int targetRelId = OpenRelTable::openRel(targetRel);
-
-    // If opening fails, delete the target relation by calling Schema::deleteRel() of
-    // return the error value returned from openRel().
-    if (targetRelId < 0 || targetRelId >= MAX_OPEN) return targetRelId;
-
-    /*** Inserting projected records into the target relation ***/
-
-    // Take care to reset the searchIndex before calling the project function
-    // using RelCacheTable::resetSearchIndex()
-    RelCacheTable::resetSearchIndex(srcRelId);
-
-    Attribute record[srcNoAttrs];
-
-    while (BlockAccess::project(srcRelId, record) == SUCCESS)
-    {
-        // record will contain the next record
-
-        ret = BlockAccess::insert(targetRelId, record);
-
-        if (ret != SUCCESS) {
-            // close the targetrel by calling Schema::closeRel()
-            // delete targetrel by calling Schema::deleteRel()
-            // return ret;
-
-            Schema::closeRel(targetRel);
-            Schema::deleteRel(targetRel);
-            return ret;
-        }
-    }
-
-    // Close the targetRel by calling Schema::closeRel()
-    Schema::closeRel(targetRel);
-
-    return SUCCESS;
-}
-
-// will return if a string can be parsed as a floating point number
-inline bool isNumber(char *str)
-{
-    int len;
-    float ignore;
-    /*
-      sscanf returns the number of elements read, so if there is no float matching
-      the first %f, ret will be 0, else it'll be 1
-
-      %n gets the number of characters read. this scanf sequence will read the
-      first float ignoring all the whitespace before and after. and the number of
-      characters read that far will be stored in len. if len == strlen(str), then
-      the string only contains a float with/without whitespace. else, there's other
-      characters.
-    */
-    int ret = sscanf(str, "%f %n", &ignore, &len);
-    return ret == 1 && len == strlen(str);
-}
-
-int Algebra::insert(char relName[ATTR_SIZE], int nAttrs, char record[][ATTR_SIZE]){
-    // if relName is equal to "RELATIONCAT" or "ATTRIBUTECAT"
-    if (strcmp(relName, RELCAT_RELNAME) == 0 || strcmp(relName, ATTRCAT_RELNAME) == 0)
-    return E_NOTPERMITTED;
-
-    // get the relation's rel-id using OpenRelTable::getRelId() method
-    int relId = OpenRelTable::getRelId(relName);
-
-    // if relation is not open in open relation table, return E_RELNOTOPEN
-    // (check if the value returned from getRelId function call = E_RELNOTOPEN)
-    if (relId < 0 || relId >= MAX_OPEN) return E_RELNOTOPEN;
-
-    // get the relation catalog entry from relation cache
-    // (use RelCacheTable::getRelCatEntry() of Cache Layer)
-    RelCatEntry relCatBuffer;
-    RelCacheTable::getRelCatEntry(relId, &relCatBuffer);
-
-    // if relCatEntry.numAttrs != numberOfAttributes in relation,
-    if (relCatBuffer.numAttrs != nAttrs) return E_NATTRMISMATCH;
-
-    // let recordValues[numberOfAttributes] be an array of type union Attribute
-    Attribute recordValues[nAttrs];
-
-    // TODO: Converting 2D char array of record values to Attribute array recordValues 
-    // iterate through 0 to nAttrs-1: (let i be the iterator)
-    for (int attrIndex = 0; attrIndex < nAttrs; attrIndex++)
-    {
-        // get the attr-cat entry for the i'th attribute from the attr-cache
-        // (use AttrCacheTable::getAttrCatEntry())
-        AttrCatEntry attrCatEntry;
-        AttrCacheTable::getAttrCatEntry(relId, attrIndex, &attrCatEntry);
-
-        int type = attrCatEntry.attrType;
-        if (type == NUMBER)
-        {
-            // if the char array record[i] can be converted to a number
-            // (check this using isNumber() function)
-            if (isNumber(record[attrIndex]))
-            {
-                /* convert the char array to numeral and store it
-                   at recordValues[i].nVal using atof() */
-                recordValues[attrIndex].nVal = atof (record[attrIndex]);
+            if (block == -1) {
+                // (end of linked list reached - the search is done.)
+                return RecId{-1, -1};
             }
-            else
-                return E_ATTRTYPEMISMATCH;
-        }
-        else if (type == STRING)
-        {
-            // copy record[i] to recordValues[i].sVal
-            strcpy((char *) &(recordValues[attrIndex].sVal), record[attrIndex]);
         }
     }
 
-    // insert the record by calling BlockAccess::insert() function
-    // let retVal denote the return value of insert call
-    int ret = BlockAccess::insert(relId, recordValues);
+    /******  Traverse through all the internal nodes according to value
+             of attrVal and the operator op                             ******/
 
-    return ret;
-}
+    /* (This section is only needed when
+        - search restarts from the root block (when searchIndex is reset by caller)
+        - root is not a leaf
+        If there was a valid search index, then we are already at a leaf block
+        and the test condition in the following loop will fail)
+    */
+    /* block is of type IND_INTERNAL */
+    while(StaticBuffer::getStaticBlockType(block)==IND_INTERNAL) {  //use StaticBuffer::getStaticBlockType()
 
-int Algebra::join(char srcRelation1[ATTR_SIZE], char srcRelation2[ATTR_SIZE], 
-            char targetRelation[ATTR_SIZE], char attribute1[ATTR_SIZE], 
-            char attribute2[ATTR_SIZE]) 
-{
-    // get the srcRelation1's rel-id using OpenRelTable::getRelId() method
-    int srcRelId1 = OpenRelTable::getRelId(srcRelation1);
+        // load the block into internalBlk using IndInternal::IndInternal().
+        IndInternal internalBlk(block);
 
-    // get the srcRelation2's rel-id using OpenRelTable::getRelId() method
-    int srcRelId2 = OpenRelTable::getRelId(srcRelation2);
+        HeadInfo intHead;
 
-    // if either of the two source relations is not open
-    //     return E_RELNOTOPEN
+        // load the header of internalBlk into intHead using BlockBuffer::getHeader()
+        internalBlk.getHeader(&intHead);
 
-    if (srcRelId1 == E_RELNOTOPEN || srcRelId2 == E_RELNOTOPEN)
-        return E_RELNOTOPEN;
+        // declare intEntry which will be used to store an entry of internalBlk.
+        InternalEntry intEntry;
+        /* op is one of NE, LT, LE */
+        if (op==NE || op==LT || op==LE) {
+            /*
+            - NE: need to search the entire linked list of leaf indices of the B+ Tree,
+            starting from the leftmost leaf index. Thus, always move to the left.
 
-    AttrCatEntry attrCatEntry1, attrCatEntry2;
-    // get the attribute catalog entries for the following from the attribute cache
-    // (using AttrCacheTable::getAttrCatEntry())
-    // - attrCatEntry1 = attribute1 of srcRelation1
-    // - attrCatEntry2 = attribute2 of srcRelation2
-    
-    // if attribute1 is not present in srcRelation1 or attribute2 is not
-    // present in srcRelation2 (getAttrCatEntry() returned E_ATTRNOTEXIST)
-    //     return E_ATTRNOTEXIST.
+            - LT and LE: the attribute values are arranged in ascending order in the
+            leaf indices of the B+ Tree. Values that satisfy these conditions, if
+            any exist, will always be found in the left-most leaf index. Thus,
+            always move to the left.
+            */
 
-    int ret = AttrCacheTable::getAttrCatEntry(srcRelId1, attribute1, &attrCatEntry1);
-    if (ret != SUCCESS) return E_ATTRNOTEXIST;
+            // load entry in the first slot of the block into intEntry
+            // using IndInternal::getEntry().
+            internalBlk.getEntry(&intEntry,0);
+            block = intEntry.lChild;
 
-    ret = AttrCacheTable::getAttrCatEntry(srcRelId2, attribute2, &attrCatEntry2);
-    if (ret != SUCCESS) return E_ATTRNOTEXIST;
+        } else {
+            /*
+            - EQ, GT and GE: move to the left child of the first entry that is
+            greater than (or equal to) attrVal
+            (we are trying to find the first entry that satisfies the condition.
+            since the values are in ascending order we move to the left child which
+            might contain more entries that satisfy the condition)
+            */
 
-    // if attribute1 and attribute2 are of different types return E_ATTRTYPEMISMATCH
-    if (attrCatEntry1.attrType != attrCatEntry2.attrType)
-        return E_ATTRTYPEMISMATCH;
+            /*
+             traverse through all entries of internalBlk and find an entry that
+             satisfies the condition.
+             if op == EQ or GE, then intEntry.attrVal >= attrVal
+             if op == GT, then intEntry.attrVal > attrVal
+             Hint: the helper function compareAttrs() can be used for comparing
+            */
+            int slot = 0, found = 0;
+            while (slot < intHead.numEntries) {
+                internalBlk.getEntry(&intEntry, slot);
 
-    // TODO: iterate through all the attributes in both the source relations and check if
-    // TODO: there are any other pair of attributes other than join attributes
-    // (i.e. attribute1 and attribute2) with duplicate names in srcRelation1 and
-    // srcRelation2 (use AttrCacheTable::getAttrCatEntry())
-    // If yes, return E_DUPLICATEATTR
+                int cmpVal = compareAttrs(intEntry.attrVal, attrVal, attrCatEntry.attrType);
 
-    // get the relation catalog entries for the relations from the relation cache
-    // (use RelCacheTable::getRelCatEntry() function)
-    RelCatEntry relCatEntryBuf1, relCatEntryBuf2;
-    RelCacheTable::getRelCatEntry(srcRelId1, &relCatEntryBuf1);
-    RelCacheTable::getRelCatEntry(srcRelId2, &relCatEntryBuf2);
-
-    int numOfAttributes1 = relCatEntryBuf1.numAttrs;
-    int numOfAttributes2 = relCatEntryBuf2.numAttrs;
-
-    for (int attrindex1 = 0; attrindex1 < numOfAttributes1; attrindex1++)
-    {
-        AttrCatEntry attrCatEntryTemp1;
-        AttrCacheTable::getAttrCatEntry(srcRelId1, attrindex1, &attrCatEntryTemp1);
-
-        if (strcmp(attrCatEntryTemp1.attrName, attribute1) == 0) continue;
-        
-        for (int attrindex2 = 0; attrindex2 < numOfAttributes2; attrindex2++)
-        {
-            AttrCatEntry attrCatEntryTemp2;
-            AttrCacheTable::getAttrCatEntry(srcRelId2, attrindex2, &attrCatEntryTemp2);
-
-            if (strcmp (attrCatEntryTemp2.attrName, attribute2) == 0) continue;
-
-            if (strcmp (attrCatEntryTemp1.attrName, attrCatEntryTemp2.attrName) == 0)
-                return E_DUPLICATEATTR;
-        }
-    }
-
-    // if rel2 does not have an index on attr2
-    //     create it using BPlusTree:bPlusCreate()
-    //     if call fails, return the appropriate error code
-    //     (if your implementation is correct, the only error code that will
-    //      be returned here is E_DISKFULL)
-
-    int rootBlock = attrCatEntry2.rootBlock;
-    if (rootBlock == -1)
-    {
-        ret = BPlusTree::bPlusCreate(srcRelId2, attribute2);
-        if (ret == E_DISKFULL) return E_DISKFULL;
-
-        rootBlock = attrCatEntry2.rootBlock;
-    }
-
-    int numOfAttributesInTarget = numOfAttributes1 + numOfAttributes2 - 1;
-
-    //* Note: The target relation has number of attributes one less than
-    //* nAttrs1+nAttrs2 (Why?) -> Because one attribute on which EquiJoin is 
-    //* performed should not be present twice!
-
-    // declare the following arrays to store the details of the target relation
-    char targetRelAttrNames[numOfAttributesInTarget][ATTR_SIZE];
-    int targetRelAttrTypes[numOfAttributesInTarget];
-
-    // iterate through all the attributes in both the source relations and
-    // update targetRelAttrNames[],targetRelAttrTypes[] arrays excluding attribute2
-    // in srcRelation2 (use AttrCacheTable::getAttrCatEntry())
-
-    for (int attrindex = 0; attrindex < numOfAttributes1; attrindex++)
-    {
-        AttrCatEntry attrcatentry; 
-        AttrCacheTable::getAttrCatEntry(srcRelId1, attrindex ,&attrcatentry);
-
-        strcpy(targetRelAttrNames[attrindex], attrcatentry.attrName);
-        targetRelAttrTypes[attrindex] = attrcatentry.attrType;
-    }
-
-    for (int attrindex = 0, flag = 0; attrindex < numOfAttributes2; attrindex++)
-    {
-        AttrCatEntry attrcatentry; 
-        AttrCacheTable::getAttrCatEntry(srcRelId2, attrindex ,&attrcatentry);
-
-        if (strcmp(attribute2, attrcatentry.attrName) == 0)
-        {
-            flag = 1;
-            continue;
-        }
-
-        strcpy(targetRelAttrNames[numOfAttributes1 + attrindex-flag], attrcatentry.attrName);
-        targetRelAttrTypes[numOfAttributes1 + attrindex-flag] = attrcatentry.attrType;
-    }    
-
-    // create the target relation using the Schema::createRel() function
-    ret = Schema::createRel(targetRelation, numOfAttributesInTarget, 
-                                targetRelAttrNames, targetRelAttrTypes);
-
-    // if createRel() returns an error, return that error
-    if (ret != SUCCESS) return ret;
-
-    // Open the targetRelation using OpenRelTable::openRel()
-    int targetRelId = OpenRelTable::openRel(targetRelation);
-
-    // if openRel() fails (No free entries left in the Open Relation Table)
-    if (targetRelId < 0)
-    {
-        // delete target relation by calling Schema::deleteRel()
-        Schema::deleteRel(targetRelation);
-
-        // return the error code
-        return targetRelId;
-    }
-
-    Attribute record1[numOfAttributes1];
-    Attribute record2[numOfAttributes2];
-    Attribute targetRecord[numOfAttributesInTarget];
-
-    // this loop is to get every record of the srcRelation1 one by one
-    RelCacheTable::resetSearchIndex(srcRelId1);
-
-    while (BlockAccess::project(srcRelId1, record1) == SUCCESS) 
-    {
-        // reset the search index of `srcRelation2` in the relation cache
-        // using RelCacheTable::resetSearchIndex()
-        RelCacheTable::resetSearchIndex(srcRelId2);
-
-        // reset the search index of `attribute2` in the attribute cache
-        // using AttrCacheTable::resetSearchIndex()
-        AttrCacheTable::resetSearchIndex(srcRelId2, attribute2);
-
-        // this loop is to get every record of the srcRelation2 which satisfies
-        //the following condition:
-        // record1.attribute1 = record2.attribute2 (i.e. Equi-Join condition)
-        while (BlockAccess::search(srcRelId2, record2, attribute2, 
-                                    record1[attrCatEntry1.offset], EQ) == SUCCESS) 
-        {
-            // copy srcRelation1's and srcRelation2's attribute values(except
-            // for attribute2 in rel2) from record1 and record2 to targetRecord
-            for (int attrindex = 0; attrindex < numOfAttributes1; attrindex++)
-                targetRecord[attrindex] = record1[attrindex];
-
-            for (int attrindex = 0, flag = 0; attrindex < numOfAttributes2; attrindex++)
-            {
-                if (attrindex == attrCatEntry2.offset)
-                {
-                    flag = 1;
-                    continue;
+                if (
+                    (op == EQ && cmpVal >= 0) ||
+                    (op == GE && cmpVal >= 0) ||
+                    (op == GT && cmpVal > 0)
+                ) {
+                    found = 1;
+                    break;
                 }
-                targetRecord[attrindex + numOfAttributes1-flag] = record2[attrindex];
+                
+                slot++;
             }
 
-            // insert the current record into the target relation by calling
-            // BlockAccess::insert()
-            ret = BlockAccess::insert(targetRelId, targetRecord);
+            /* such an entry is found*/
+            if (found) {
+                // move to the left child of that entry
+                block =  intEntry.lChild;
 
-            // if insert fails (insert should fail only due to DISK being FULL)
-            if (ret == E_DISKFULL)
-            {
-                // close the target relation by calling OpenRelTable::closeRel()
-                ret = OpenRelTable::closeRel(targetRelId);
+            } else {
+                // move to the right child of the last entry of the block
+                // i.e numEntries - 1 th entry of the block
 
-                // delete targetRelation (by calling Schema::deleteRel())
-                ret = Schema::deleteRel(targetRelation);
-
-                return E_DISKFULL;
+                block =  intEntry.rChild;
             }
         }
     }
 
-    // close the target relation by calling OpenRelTable::closeRel()
+    // NOTE: `block` now has the block number of a leaf index block.
+
+    /******  Identify the first leaf index entry from the current position
+                that satisfies our condition (moving right)             ******/
+
+    while (block != -1) {
+        // load the block into leafBlk using IndLeaf::IndLeaf().
+        IndLeaf leafBlk(block);
+        HeadInfo leafHead;
+
+        // load the header to leafHead using BlockBuffer::getHeader().
+        leafBlk.getHeader(&leafHead);
+
+        // declare leafEntry which will be used to store an entry from leafBlk
+        Index leafEntry;
+
+        /*index < numEntries in leafBlk*/
+        while (index<leafHead.numEntries) {
+
+            // load entry corresponding to block and index into leafEntry
+            // using IndLeaf::getEntry().
+            leafBlk.getEntry(&leafEntry,index);
+            /* comparison between leafEntry's attribute value and input attrVal using compareAttrs()*/ 
+            int cmpVal = compareAttrs(leafEntry.attrVal,attrVal,attrCatEntry.attrType);
+
+            if (
+                (op == EQ && cmpVal == 0) ||
+                (op == LE && cmpVal <= 0) ||
+                (op == LT && cmpVal < 0) ||
+                (op == GT && cmpVal > 0) ||
+                (op == GE && cmpVal >= 0) ||
+                (op == NE && cmpVal != 0)
+            ) {
+                // (entry satisfying the condition found)
+
+                // set search index to {block, index}
+                searchIndex.block = block;
+                searchIndex.index = index;
+                AttrCacheTable::setSearchIndex(relId,attrName,&searchIndex);
+                // return the recId {leafEntry.block, leafEntry.slot}.
+                return RecId{leafEntry.block,leafEntry.slot};
+
+            } else if ((op == EQ || op == LE || op == LT) && cmpVal > 0) {
+                /*future entries will not satisfy EQ, LE, LT since the values
+                    are arranged in ascending order in the leaves */
+
+                // return RecId {-1, -1};
+                return RecId{-1,-1};
+            }
+
+            // search next index.
+            ++index;
+        }
+
+        /*only for NE operation do we have to check the entire linked list;
+        for all the other op it is guaranteed that the block being searched
+        will have an entry, if it exists, satisying that op. */
+        if (op != NE) {
+            break;
+        }
+
+        // block = next block in the linked list, i.e., the rblock in leafHead.
+        // update index to 0.
+        block=leafHead.rblock;
+        index=0;
+    }
+
+    // no entry satisying the op was found; return the recId {-1,-1}
+    return RecId{-1,-1};
+}
+
+int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE]) {
+
+    // if relId is either RELCAT_RELID or ATTRCAT_RELID:
+    //     return E_NOTPERMITTED;
+    if(relId==0 || relId==1) return E_NOTPERMITTED;
+    // get the attribute catalog entry of attribute `attrName`
+    // using AttrCacheTable::getAttrCatEntry()
+    AttrCatEntry attrcatEntry;
+    int ret = AttrCacheTable::getAttrCatEntry(relId,attrName,&attrcatEntry);
+    // if getAttrCatEntry fails
+    //     return the error code from getAttrCatEntry
+    if(ret!=SUCCESS) return ret;
+    int rootBlock = attrcatEntry.rootBlock;
+    if (/* an index already exists for the attribute (check rootBlock field) */rootBlock!=-1) {
+        return SUCCESS;
+    }
+
+    /******Creating a new B+ Tree ******/
+
+    // get a free leaf block using constructor 1 to allocate a new block
+    IndLeaf rootBlockBuf;
+
+    // (if the block could not be allocated, the appropriate error code
+    //  will be stored in the blockNum member field of the object)
+
+    // declare rootBlock to store the blockNumber of the new leaf block
+    rootBlock = rootBlockBuf.getBlockNum();
+
+    // if there is no more disk space for creating an index
+    if (rootBlock == E_DISKFULL) {
+        return E_DISKFULL;
+    }
+    attrcatEntry.rootBlock = rootBlock;
+    AttrCacheTable::setAttrCatEntry(relId, attrName, &attrcatEntry);
+
+    RelCatEntry relCatEntry;
+
+    // load the relation catalog entry into relCatEntry
+    // using RelCacheTable::getRelCatEntry().
+    RelCacheTable::getRelCatEntry(relId,&relCatEntry);
+
+    int block = /* first record block of the relation */ relCatEntry.firstBlk;
+
+    /***** Traverse all the blocks in the relation and insert them one
+           by one into the B+ Tree *****/
+    while (block != -1) {
+
+        // declare a RecBuffer object for `block` (using appropriate constructor)
+        RecBuffer BufferBlock(block);
+
+        unsigned char slotMap[relCatEntry.numSlotsPerBlk];
+
+        // load the slot map into slotMap using RecBuffer::getSlotMap().
+        BufferBlock.getSlotMap(slotMap);
+
+        // for every occupied slot of the block
+        for(int i=0;i<relCatEntry.numSlotsPerBlk;i++)
+        {
+            if(slotMap[i]==SLOT_OCCUPIED)
+            {
+                Attribute record[relCatEntry.numAttrs];
+                // load the record corresponding to the slot into `record`
+                // using RecBuffer::getRecord().
+                BufferBlock.getRecord(record,i);
+                // declare recId and store the rec-id of this record in it
+                // RecId recId{block, slot};
+                RecId recId = RecId{block,i};
+                // insert the attribute value corresponding to attrName from the record
+                // into the B+ tree using bPlusInsert.
+                // (note that bPlusInsert will destroy any existing bplus tree if
+                // insert fails i.e when disk is full)
+                // retVal = bPlusInsert(relId, attrName, attribute value, recId);
+                int retval = bPlusInsert(relId,attrName,record[attrcatEntry.offset],recId);
+                // if (retVal == E_DISKFULL) {
+                //     // (unable to get enough blocks to build the B+ Tree.)
+                //     return E_DISKFULL;
+                // }
+                if(retval==E_DISKFULL) return E_DISKFULL;
+            }
+        }
+
+        // get the header of the block using BlockBuffer::getHeader()
+        struct HeadInfo head;
+        BufferBlock.getHeader(&head);
+        // set block = rblock of current block (from the header)
+        block=head.rblock;
+    }
+
+    return SUCCESS;
+}
+
+
+
+int BPlusTree::bPlusInsert(int relId, char attrName[ATTR_SIZE], Attribute attrVal, RecId recId) {
+    // get the attribute cache entry corresponding to attrName
+    // using AttrCacheTable::getAttrCatEntry().
+    AttrCatEntry attrcatEntry;
+    int ret = AttrCacheTable::getAttrCatEntry(relId,attrName,&attrcatEntry);
+    // if getAttrCatEntry() failed
+    //     return the error code
+    if(ret!=SUCCESS) return ret;
+    int blockNum = /* rootBlock of B+ Tree (from attrCatEntry) */ attrcatEntry.rootBlock;
+
+    if (/* there is no index on attribute (rootBlock is -1) */ blockNum==-1) {
+        return E_NOINDEX;
+    }
+
+    // find the leaf block to which insertion is to be done using the
+    // findLeafToInsert() function
+    /* findLeafToInsert(root block num, attrVal, attribute type) */ 
+    int leafBlkNum = findLeafToInsert(blockNum,attrVal,attrcatEntry.attrType);
+
+    // insert the attrVal and recId to the leaf block at blockNum using the
+    // insertIntoLeaf() function.
+    struct Index leafIndex;
+    leafIndex.attrVal = attrVal;
+    leafIndex.block = recId.block;
+    leafIndex.slot = recId.slot;
+    // declare a struct Index with attrVal = attrVal, block = recId.block and
+    // slot = recId.slot to pass as argument to the function.
+    // insertIntoLeaf(relId, attrName, leafBlkNum, Index entry)
+    // NOTE: the insertIntoLeaf() function will propagate the insertion to the
+    //       required internal nodes by calling the required helper functions
+    //       like insertIntoInternal() or createNewRoot()
+    ret = insertIntoLeaf(relId,attrName,leafBlkNum,leafIndex);
+    if (/*insertIntoLeaf() returns E_DISKFULL */ ret == E_DISKFULL) {
+        // destroy the existing B+ tree by passing the rootBlock to bPlusDestroy().
+        bPlusDestroy(blockNum);
+        // update the rootBlock of attribute catalog cache entry to -1 using
+        // AttrCacheTable::setAttrCatEntry().
+        attrcatEntry.rootBlock = -1 ;
+        AttrCacheTable::setAttrCatEntry(relId,attrName,&attrcatEntry);
+        return E_DISKFULL;
+    }
+
+    return SUCCESS;
+}
+
+int BPlusTree::findLeafToInsert(int rootBlock, Attribute attrVal, int attrType) {
+    int blockNum = rootBlock;
+
+    while (/*block is not of type IND_LEAF */ StaticBuffer::getStaticBlockType(blockNum)!=IND_LEAF) {  // use StaticBuffer::getStaticBlockType()
+
+        // declare an IndInternal object for block using appropriate constructor
+        IndInternal internalBlock(blockNum);
+        // get header of the block using BlockBuffer::getHeader()
+        struct HeadInfo head;
+        internalBlock.getHeader(&head);
+        int entries = head.numEntries;
+        /* iterate through all the entries, to find the first entry whose
+             attribute value >= value to be inserted.
+             NOTE: the helper function compareAttrs() declared in BlockBuffer.h
+                   can be used to compare two Attribute values. */
+        int entry = -1;
+        InternalEntry ptr;
+        for(int i=0;i<entries;i++)
+        {
+            internalBlock.getEntry(&ptr,i);
+            int cmp = compareAttrs(ptr.attrVal,attrVal,attrType);
+            if(cmp>=0)
+            {
+                entry = i;
+                break;
+            }
+        }
+
+        if (/*no such entry is found*/entry == -1) {
+            // set blockNum = rChild of (nEntries-1)'th entry of the block
+            // (i.e. rightmost child of the block)
+            blockNum=ptr.rChild;
+
+        } else {
+            // set blockNum = lChild of the entry that was found
+            blockNum = ptr.lChild;
+        }
+    }
+
+    return blockNum;
+}
+
+int BPlusTree::insertIntoLeaf(int relId, char attrName[ATTR_SIZE], int blockNum, Index indexEntry) {
+    // get the attribute cache entry corresponding to attrName
+    // using AttrCacheTable::getAttrCatEntry().
+    AttrCatEntry attrcatEntry;
+    int ret = AttrCacheTable::getAttrCatEntry(relId,attrName,&attrcatEntry);
+    // declare an IndLeaf instance for the block using appropriate constructor
+    IndLeaf leafBlock(blockNum);
+    HeadInfo blockHeader;
+    // store the header of the leaf index block into blockHeader
+    // using BlockBuffer::getHeader()
+    leafBlock.getHeader(&blockHeader);
+    // the following variable will be used to store a list of index entries with
+    // existing indices + the new index to insert
+    Index indices[blockHeader.numEntries + 1];
+
+    /*
+    Iterate through all the entries in the block and copy them to the array indices.
+    Also insert `indexEntry` at appropriate position in the indices array maintaining
+    the ascending order.
+    - use IndLeaf::getEntry() to get the entry
+    - use compareAttrs() declared in BlockBuffer.h to compare two Attribute structs
+    */
+    Index ptr;
+    for(int i=0;i<blockHeader.numEntries;i++)
+    {
+        leafBlock.getEntry(&ptr,i);
+        indices[i] = ptr ;
+    }
+
+    int index=blockHeader.numEntries;
+    for(int i=0;i<blockHeader.numEntries;i++)
+    {
+        int cmp = compareAttrs(indices[i].attrVal,indexEntry.attrVal,attrcatEntry.attrType);
+        if(cmp>0)
+        {
+            index = i;
+            break;
+        }
+    }
+    for(int i=blockHeader.numEntries;i>index;i--) indices[i]=indices[i-1];
+    indices[index]=indexEntry;
+
+    if (blockHeader.numEntries != MAX_KEYS_LEAF) {
+        // (leaf block has not reached max limit)
+
+        // increment blockHeader.numEntries and update the header of block
+        // using BlockBuffer::setHeader().
+        blockHeader.numEntries++;
+        leafBlock.setHeader(&blockHeader);
+        // iterate through all the entries of the array `indices` and populate the
+        // entries of block with them using IndLeaf::setEntry().
+        for(int i=0;i<blockHeader.numEntries;i++)
+        {
+            ptr = indices[i];
+            leafBlock.setEntry(&ptr,i);
+        }
+        return SUCCESS;
+    }
+
+    // If we reached here, the `indices` array has more than entries than can fit
+    // in a single leaf index block. Therefore, we will need to split the entries
+    // in `indices` between two leaf blocks. We do this using the splitLeaf() function.
+    // This function will return the blockNum of the newly allocated block or
+    // E_DISKFULL if there are no more blocks to be allocated.
+
+    int newRightBlk = splitLeaf(blockNum, indices);
+
+    // if splitLeaf() returned E_DISKFULL
+    //     return E_DISKFULL
+    if(newRightBlk==E_DISKFULL) return E_DISKFULL;
+
+    int ret1,ret2;
+
+    if (/* the current leaf block was not the root */blockHeader.pblock!=-1) {  // check pblock in header
+        // insert the middle value from `indices` into the parent block using the
+        // insertIntoInternal() function. (i.e the last value of the left block)
+
+        // the middle value will be at index 31 (given by constant MIDDLE_INDEX_LEAF)
+        struct InternalEntry internal;
+        internal.attrVal = indices[MIDDLE_INDEX_LEAF].attrVal;
+        internal.lChild = blockNum;
+        internal.rChild = newRightBlk;
+        // create a struct InternalEntry with attrVal = indices[MIDDLE_INDEX_LEAF].attrVal,
+        // lChild = currentBlock, rChild = newRightBlk and pass it as argument to
+        // the insertIntoInternalFunction as follows
+        ret1 = insertIntoInternal(relId,attrName,blockHeader.pblock,internal);
+        // insertIntoInternal(relId, attrName, parent of current block, new internal entry)
+
+    } else {
+        // the current block was the root block and is now split. a new internal index
+        // block needs to be allocated and made the root of the tree.
+        // To do this, call the createNewRoot() function with the following arguments
+
+        // createNewRoot(relId, attrName, indices[MIDDLE_INDEX_LEAF].attrVal,
+        //               current block, new right block)
+        ret2 = createNewRoot(relId,attrName,indices[MIDDLE_INDEX_LEAF].attrVal,blockNum,newRightBlk);
+    }
+
+    // if either of the above calls returned an error (E_DISKFULL), then return that
+    if(ret1==E_DISKFULL || ret2==E_DISKFULL) return E_DISKFULL;
+    // else return SUCCESS
+    return SUCCESS;
+}
+
+int BPlusTree::splitLeaf(int leafBlockNum, Index indices[]) {
+    // declare rightBlk, an instance of IndLeaf using constructor 1 to obtain new
+    // leaf index block that will be used as the right block in the splitting
+    IndLeaf rightBlock;
+    // declare leftBlk, an instance of IndLeaf using constructor 2 to read from
+    // the existing leaf block
+    IndLeaf leftBlock(leafBlockNum);
+    int rightBlkNum = /* block num of right blk */rightBlock.getBlockNum();
+    int leftBlkNum = /* block num of left blk */leafBlockNum;
+
+    if (/* newly allocated block has blockNum E_DISKFULL */ rightBlkNum==E_DISKFULL) {
+        //(failed to obtain a new leaf index block because the disk is full)
+        return E_DISKFULL;
+    }
+
+    HeadInfo leftBlkHeader, rightBlkHeader;
+    // get the headers of left block and right block using BlockBuffer::getHeader()
+    rightBlock.getHeader(&rightBlkHeader);
+    leftBlock.getHeader(&leftBlkHeader);
+    // set rightBlkHeader with the following values
+    // - number of entries = (MAX_KEYS_LEAF+1)/2 = 32,
+    // - pblock = pblock of leftBlk
+    // - lblock = leftBlkNum
+    // - rblock = rblock of leftBlk
+    // and update the header of rightBlk using BlockBuffer::setHeader()
+    rightBlkHeader.numEntries = 32;
+    rightBlkHeader.pblock = leftBlkHeader.pblock;
+    rightBlkHeader.lblock = leftBlkNum;
+    rightBlkHeader.rblock = leftBlkHeader.rblock;
+    rightBlock.setHeader(&rightBlkHeader);
+    // set leftBlkHeader with the following values
+    // - number of entries = (MAX_KEYS_LEAF+1)/2 = 32
+    // - rblock = rightBlkNum
+    // and update the header of leftBlk using BlockBuffer::setHeader() */
+    leftBlkHeader.numEntries = 32;
+    leftBlkHeader.rblock = rightBlkNum;
+    leftBlock.setHeader(&leftBlkHeader);
+    // set the first 32 entries of leftBlk = the first 32 entries of indices array
+    // and set the first 32 entries of newRightBlk = the next 32 entries of
+    // indices array using IndLeaf::setEntry().
+    for(int i=0;i<32;i++)
+    {
+        leftBlock.setEntry(&indices[i],i);
+    }
+    for(int i=0;i<32;i++)
+    {
+        rightBlock.setEntry(&indices[i+32],i);
+    }
+    return rightBlkNum;
+}
+
+int BPlusTree::insertIntoInternal(int relId, char attrName[ATTR_SIZE], int intBlockNum, InternalEntry intEntry) {
+    // get the attribute cache entry corresponding to attrName
+    // using AttrCacheTable::getAttrCatEntry().
+    AttrCatEntry attrcatEntry;
+    int ret = AttrCacheTable::getAttrCatEntry(relId,attrName,&attrcatEntry);
+    // declare intBlk, an instance of IndInternal using constructor 2 for the block
+    // corresponding to intBlockNum
+    IndInternal intBlk(intBlockNum);
+    HeadInfo blockHeader;
+    // load blockHeader with header of intBlk using BlockBuffer::getHeader().
+    intBlk.getHeader(&blockHeader);
+    // declare internalEntries to store all existing entries + the new entry
+    InternalEntry internalEntries[blockHeader.numEntries + 1];
+
+    /*
+    Iterate through all the entries in the block and copy them to the array
+    `internalEntries`. Insert `indexEntry` at appropriate position in the
+    array maintaining the ascending order.
+        - use IndInternal::getEntry() to get the entry
+        - use compareAttrs() to compare two structs of type Attribute
+
+    Update the lChild of the internalEntry immediately following the newly added
+    entry to the rChild of the newly added entry.
+    */
+    for(int i=0;i<blockHeader.numEntries;i++)
+    {
+        intBlk.getEntry(&internalEntries[i],i);   
+    }
+    int index = blockHeader.numEntries;
+    for(int i=0;i<blockHeader.numEntries;i++)
+    {
+        int cmp = compareAttrs(internalEntries[i].attrVal,intEntry.attrVal,attrcatEntry.attrType);
+        if(cmp>0)
+        {
+            index=i;
+            break;
+        }
+    }
+    for(int j=blockHeader.numEntries;j>index;j--) internalEntries[j]=internalEntries[j-1];
+    internalEntries[index]=intEntry;
+    if(index>0)
+    {
+        internalEntries[index-1].rChild = intEntry.lChild;
+    }
+    if(index<blockHeader.numEntries)
+    {
+        internalEntries[index+1].lChild = intEntry.rChild;
+    }
+    if (blockHeader.numEntries != MAX_KEYS_INTERNAL) {
+        // (internal index block has not reached max limit)
+
+        // increment blockheader.numEntries and update the header of intBlk
+        // using BlockBuffer::setHeader().
+        blockHeader.numEntries++;
+        intBlk.setHeader(&blockHeader);
+        // iterate through all entries in internalEntries array and populate the
+        // entries of intBlk with them using IndInternal::setEntry().
+        for(int i=0;i<blockHeader.numEntries;i++) intBlk.setEntry(&internalEntries[i],i);
+        return SUCCESS;
+    }
+
+    // If we reached here, the `internalEntries` array has more than entries than
+    // can fit in a single internal index block. Therefore, we will need to split
+    // the entries in `internalEntries` between two internal index blocks. We do
+    // this using the splitInternal() function.
+    // This function will return the blockNum of the newly allocated block or
+    // E_DISKFULL if there are no more blocks to be allocated.
+
+    int newRightBlk = splitInternal(intBlockNum, internalEntries);
+
+    if (/* splitInternal() returned E_DISKFULL */ newRightBlk==E_DISKFULL) {
+
+        // Using bPlusDestroy(), destroy the right subtree, rooted at intEntry.rChild.
+        // This corresponds to the tree built up till now that has not yet been
+        // connected to the existing B+ Tree
+        bPlusDestroy(intEntry.rChild);
+
+        return E_DISKFULL;
+    }
+    int ret1,ret2;
+    if (/* the current block was not the root */ blockHeader.pblock!=-1 ) {  // (check pblock in header)
+        // insert the middle value from `internalEntries` into the parent block
+        // using the insertIntoInternal() function (recursively).
+
+        // the middle value will be at index 50 (given by constant MIDDLE_INDEX_INTERNAL)
+
+        // create a struct InternalEntry with lChild = current block, rChild = newRightBlk
+        // and attrVal = internalEntries[MIDDLE_INDEX_INTERNAL].attrVal
+        // and pass it as argument to the insertIntoInternalFunction as follows
+        struct InternalEntry entry;
+        entry.lChild = intBlockNum;
+        entry.rChild = newRightBlk;
+        entry.attrVal = internalEntries[MIDDLE_INDEX_INTERNAL].attrVal;
+        // insertIntoInternal(relId, attrName, parent of current block, new internal entry)
+        ret1 = insertIntoInternal(relId,attrName,blockHeader.pblock,entry);
+
+    } else {
+        // the current block was the root block and is now split. a new internal index
+        // block needs to be allocated and made the root of the tree.
+        // To do this, call the createNewRoot() function with the following arguments
+
+        // createNewRoot(relId, attrName,
+        //               internalEntries[MIDDLE_INDEX_INTERNAL].attrVal,
+        //               current block, new right block)
+        ret2 = createNewRoot(relId,attrName,internalEntries[MIDDLE_INDEX_INTERNAL].attrVal,intBlockNum,newRightBlk);
+    }
+
+    // if either of the above calls returned an error (E_DISKFULL), then return that
+    if(ret1==E_DISKFULL || ret2==E_DISKFULL) return E_DISKFULL;
+    // else return SUCCESS
+    return SUCCESS;
+}
+
+int BPlusTree::splitInternal(int intBlockNum, InternalEntry internalEntries[]) {
+    // declare rightBlk, an instance of IndInternal using constructor 1 to obtain new
+    // internal index block that will be used as the right block in the splitting
+    IndInternal rightBlk;
+    // declare leftBlk, an instance of IndInternal using constructor 2 to read from
+    // the existing internal index block
+    IndInternal leftBlk(intBlockNum);
+    int rightBlkNum = /* block num of right blk */ rightBlk.getBlockNum();
+    int leftBlkNum = /* block num of left blk */ intBlockNum;
+
+    if (/* newly allocated block has blockNum E_DISKFULL */ rightBlkNum==E_DISKFULL) {
+        //(failed to obtain a new internal index block because the disk is full)
+        return E_DISKFULL;
+    }
+
+    HeadInfo leftBlkHeader, rightBlkHeader;
+    // get the headers of left block and right block using BlockBuffer::getHeader()
+    rightBlk.getHeader(&rightBlkHeader);
+    leftBlk.getHeader(&leftBlkHeader);
+    // set rightBlkHeader with the following values
+    // - number of entries = (MAX_KEYS_INTERNAL)/2 = 50
+    // - pblock = pblock of leftBlk
+    // and update the header of rightBlk using BlockBuffer::setHeader()
+    rightBlkHeader.numEntries = 50;
+    rightBlkHeader.pblock = leftBlkHeader.pblock;
+    rightBlk.setHeader(&rightBlkHeader);
+    // set leftBlkHeader with the following values
+    // - number of entries = (MAX_KEYS_INTERNAL)/2 = 50
+    // - rblock = rightBlkNum
+    // and update the header using BlockBuffer::setHeader()
+    leftBlkHeader.numEntries = 50;
+    leftBlkHeader.rblock = rightBlkNum;
+    leftBlk.setHeader(&leftBlkHeader);
+    /*
+    - set the first 50 entries of leftBlk = index 0 to 49 of internalEntries
+      array
+    - set the first 50 entries of newRightBlk = entries from index 51 to 100
+      of internalEntries array using IndInternal::setEntry().
+      (index 50 will be moving to the parent internal index block)
+    */
+    for(int i=0;i<50;i++) leftBlk.setEntry(&internalEntries[i],i);
+    for(int i=0;i<50;i++) rightBlk.setEntry(&internalEntries[i+51],i);
+    int type = /* block type of a child of any entry of the internalEntries array */ StaticBuffer::getStaticBlockType(internalEntries[0].lChild);
+    //            (use StaticBuffer::getStaticBlockType())
+
+    HeadInfo head;
+    for (/* each child block of the new right block */ int i=0;i<50;i++) {
+        // declare an instance of BlockBuffer to access the child block using
+        // constructor 2
+        if(i==0)
+        {
+            BlockBuffer child(internalEntries[i+51].lChild);
+            child.getHeader(&head);
+            head.pblock = rightBlkNum;
+            child.setHeader(&head);
+        }
+        BlockBuffer child(internalEntries[i+51].rChild);
+        child.getHeader(&head);
+        head.pblock = rightBlkNum;
+        child.setHeader(&head);
+        // update pblock of the block to rightBlkNum using BlockBuffer::getHeader()
+        // and BlockBuffer::setHeader().
+    }
+
+    return rightBlkNum;
+}
+
+int BPlusTree::createNewRoot(int relId, char attrName[ATTR_SIZE], Attribute attrVal, int lChild, int rChild) {
+    // get the attribute cache entry corresponding to attrName
+    // using AttrCacheTable::getAttrCatEntry().
+    AttrCatEntry attrcatEntry;
+    int ret = AttrCacheTable::getAttrCatEntry(relId,attrName,&attrcatEntry);
+    // declare newRootBlk, an instance of IndInternal using appropriate constructor
+    // to allocate a new internal index block on the disk
+    IndInternal newRootBlk;
+
+    int newRootBlkNum = /* block number of newRootBlk */ newRootBlk.getBlockNum();
+
+    if (newRootBlkNum == E_DISKFULL) {
+        // (failed to obtain an empty internal index block because the disk is full)
+
+        // Using bPlusDestroy(), destroy the right subtree, rooted at rChild.
+        // This corresponds to the tree built up till now that has not yet been
+        // connected to the existing B+ Tree
+        bPlusDestroy(rChild);
+
+        return E_DISKFULL;
+    }
+
+    // update the header of the new block with numEntries = 1 using
+    // BlockBuffer::getHeader() and BlockBuffer::setHeader()
+    HeadInfo head;
+    newRootBlk.getHeader(&head);
+    head.numEntries = 1;
+    newRootBlk.setHeader(&head);
+
+    // create a struct InternalEntry with lChild, attrVal and rChild from the
+    // arguments and set it as the first entry in newRootBlk using IndInternal::setEntry()
+    struct InternalEntry entry;
+    entry.lChild = lChild;
+    entry.rChild = rChild;
+    entry.attrVal = attrVal;
+    newRootBlk.setEntry(&entry,0);
+    
+    // declare BlockBuffer instances for the `lChild` and `rChild` blocks using
+    // appropriate constructor and update the pblock of those blocks to `newRootBlkNum`
+    // using BlockBuffer::getHeader() and BlockBuffer::setHeader()
+    BlockBuffer lBlk(lChild),rBlk(rChild);
+
+    lBlk.getHeader(&head);
+    head.pblock = newRootBlkNum;
+    lBlk.setHeader(&head);
+
+    rBlk.getHeader(&head);
+    head.pblock = newRootBlkNum;
+    rBlk.setHeader(&head);
+    // update rootBlock = newRootBlkNum for the entry corresponding to `attrName`
+    // in the attribute cache using AttrCacheTable::setAttrCatEntry().
+    attrcatEntry.rootBlock = newRootBlkNum;
+    AttrCacheTable::setAttrCatEntry(relId,attrName,&attrcatEntry);
+    
     return SUCCESS;
 }

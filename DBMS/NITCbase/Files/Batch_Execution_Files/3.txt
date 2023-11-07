@@ -1,0 +1,25 @@
+echo ----Creating new relations----
+CREATE TABLE Organizers(name STR, eventId NUM);
+OPEN TABLE Organizers;
+INSERT INTO Organizers values from organizers.csv;
+OPEN TABLE Participants;
+OPEN TABLE Events;
+SELECT regNo, eventName, location, id FROM Participants JOIN Events INTO temp1 WHERE Participants.eventName = Events.title;
+OPEN TABLE temp1;
+SELECT regNo, eventId, event, location, name FROM Organizers JOIN temp1 INTO PartData WHERE Organizers.eventId = temp1.id;
+echo ----DROPPING TEMPORARY RELATIONS----
+CLOSE TABLE temp1;
+DROP TABLE temp1;
+echo ---- Thomas ------
+echo ----Creating new relations----
+SELECT eventId FROM Organizers INTO IDS WHERE name = Thomas;
+OPEN TABLE IDS;
+SELECT eventId, title FROM IDS JOIN Events INTO EVENTS WHERE IDS.eventId = Events.id;
+OPEN TABLE EVENTS;
+SELECT regNo, eventId, eventName FROM Participants JOIN EVENTS INTO ThomasParts WHERE Participants.eventName = EVENTS.title;
+echo ----DROPPING TEMPORARY RELATIONS----
+CLOSE TABLE IDS;
+CLOSE TABLE EVENTS;
+DROP TABLE IDS;
+DROP TABLE EVENTS;
+echo ---Done---
