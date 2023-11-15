@@ -32,7 +32,7 @@ DROP TABLE S11_c_temp;
 echo -------------------------------------------------------
 echo
 echo ----Selecting all students with cgpa greater than 9----
-SELECT * FROM S11_Students INTO S11_9_Students WHERE cgpa >= 9;
+SELECT * FROM S11_Students INTO S11_9_Students WHERE cgpa = 9;
 echo -------------------------------------------------------
 echo
 echo ----Dropping index on S11_Students.name----

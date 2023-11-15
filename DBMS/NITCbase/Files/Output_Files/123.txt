@@ -1,0 +1,126 @@
+----- B+ TREE BLOCKS -----
+BLOCK 10
+Block Type: IND_INTERNAL
+Parent Block: -1
+No of entries: 2
+lchild: 8, key_val: 9.00, rchild: 11
+lchild: 11, key_val: 9.00, rchild: 9
+---------
+BLOCK 8
+Block Type: IND_LEAF
+Parent Block: 10
+No of entries: 36
+left node: -1, right node: 11
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+---------
+BLOCK 11
+Block Type: IND_LEAF
+Parent Block: 10
+No of entries: 32
+left node: 8, right node: 9
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+---------
+BLOCK 9
+Block Type: IND_LEAF
+Parent Block: 10
+No of entries: 32
+left node: 11, right node: -1
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+---------
