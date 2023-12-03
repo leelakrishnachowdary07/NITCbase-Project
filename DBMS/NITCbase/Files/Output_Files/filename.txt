@@ -1,0 +1,161 @@
+----- B+ TREE BLOCKS -----
+BLOCK 11
+Block Type: IND_INTERNAL
+Parent Block: -1
+No of entries: 3
+lchild: 9, key_val: 9.00, rchild: 9
+lchild: 9, key_val: 9.00, rchild: 9
+lchild: 9, key_val: 9.00, rchild: 13
+---------
+BLOCK 9
+Block Type: IND_LEAF
+Parent Block: 11
+No of entries: 32
+left node: -1, right node: 13
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+---------
+BLOCK 9
+Block Type: IND_LEAF
+Parent Block: 11
+No of entries: 32
+left node: -1, right node: 13
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+---------
+BLOCK 9
+Block Type: IND_LEAF
+Parent Block: 11
+No of entries: 32
+left node: -1, right node: 13
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+---------
+BLOCK 13
+Block Type: IND_LEAF
+Parent Block: 11
+No of entries: 32
+left node: 9, right node: 12
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+key_val: 9.00
+---------
