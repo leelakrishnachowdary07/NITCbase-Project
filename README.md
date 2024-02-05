@@ -15,13 +15,13 @@ To get started with NITCbase, follow these installation steps:
 1. Clone the repository:
 
     ```sh
-    git clone https://github.com/vikram18rock/NITCbase.git
+    git clone https://github.com/leelakrishnachowdary07/NITCbase-Project.git
     ```
 
 2. Navigate to the project directory:
 
     ```sh
-    cd NITCbase/mynitcbase
+    cd NITCbase-Project/DBMS/NITCbase/mynitcbase
     ```
 
 3. Build the project using the `make` command:
@@ -50,20 +50,13 @@ Be aware that the XFS interface operates directly on the disk without creating a
 - [`mynitcbase/`](mynitcbase): The main project directory.
 - [`XFS_Interface/`](XFS_Interface): Contains the source code for the XFS interface.
 
-## Contributing
-
-We welcome contributions from the open-source community. If you'd like to contribute to NITCbase, please follow our [Contribution Guidelines](CONTRIBUTING.md).
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE.md) file for details.
 
 ## Contact
 
 For questions, feedback, or support, please feel free to contact us:
 
-- Email: [v16ash@gmail.com](mailto:v16ash@gmail.com)
+- Email: [leelakrishnachowdary21171@gmail.com](mailto:leelakrishnachowdary21171@gmail.com)
 - Project Website: [https://nitcbase.github.io](https://nitcbase.github.io)
-- GitHub Repository: [https://github.com/vikram18rock/NITCbase](https://github.com/vikram18rock/NITCbase)
+- GitHub Repository: [https://github.com/leelakrishnachowdary07/NITCbase-Project](https://github.com/leelakrishnachowdary07/NITCbase-Project)
 
-Thank you for your interest in NITCbase!
+Thank you for your interest in NITCbase-Project!
