@@ -4,7 +4,88 @@ NITCbase is an object-oriented implementation of a relational database managemen
 
 ![NITCbase Logo](https://github.com/NITCbase/nitcbase.github.io/raw/main/static/img/FrontBannerLogo.png)
 
-## Overview
+
+---
+
+# **NITCbase: A Relational Database Management System**
+
+## **Project Overview**  
+NITCbase is an educational Relational Database Management System (RDBMS) designed to demonstrate the inner workings of database systems. It is organized into distinct layers, each responsible for specific functionalities, mirroring the modular design of modern RDBMS. The project was implemented using C++ and emphasizes both theoretical understanding and practical implementation.
+
+---
+
+## **Key Features and Layer Functionality**
+
+1. **Frontend Layer**  
+   - **Purpose**: Acts as the user interface, translating SQL-like queries into system-recognized commands.  
+   - **Key Functionality**:  
+     - Converts user inputs into internal function calls.  
+     - Ensures seamless interaction between the user and the database system.  
+
+2. **Schema Layer**  
+   - **Purpose**: Handles database structure management through Data Definition Language (DDL) commands.  
+   - **Key Functionality**:  
+     - Create, delete, rename, and modify tables and attributes.  
+     - Manages metadata using lower layers for disk access and indexing.  
+
+3. **Algebra Layer**  
+   - **Purpose**: Processes Data Manipulation Language (DML) commands for querying and modifying data.  
+   - **Key Functionality**:  
+     - Implements SELECT, PROJECT, and JOIN operations.  
+     - Prepares complex queries for execution by lower layers.  
+
+4. **Cache Layer**  
+   - **Purpose**: Maintains in-memory structures for frequently accessed data to enhance performance.  
+   - **Key Functionality**:  
+     - Manages relation and attribute caches.  
+     - Facilitates quick access to metadata and runtime data.  
+
+5. **Block Access Layer**  
+   - **Purpose**: Core layer for retrieving and manipulating data stored on disk.  
+   - **Key Functionality**:  
+     - Executes fundamental DML operations (select and project).  
+     - Provides data access for higher layers, ensuring consistency and efficiency.  
+
+6. **B+ Tree Layer**  
+   - **Purpose**: Optimizes data retrieval using indexing techniques.  
+   - **Key Functionality**:  
+     - Implements B+ Tree search and insertion operations.  
+     - Enhances query performance by reducing data retrieval time.  
+
+7. **Buffer Layer**  
+   - **Purpose**: Manages disk buffering and provides an interface for accessing disk blocks.  
+   - **Key Functionality**:  
+     - Implements a Least Recently Used (LRU) buffer replacement strategy.  
+     - Handles efficient caching and disk I/O operations.  
+
+8. **Physical Layer**  
+   - **Purpose**: Provides low-level disk access routines.  
+   - **Key Functionality**:  
+     - Reads data from and writes data to disk blocks.  
+     - Acts as the foundation for all higher-layer operations.  
+
+---
+
+## **Technologies Used**  
+- **Programming Language**: C++  
+- **Core Concepts**: Query processing, indexing, caching, buffer management, and disk I/O operations.  
+
+---
+
+## **Challenges and Learnings**  
+- Implementing efficient B+ Trees and managing runtime caches.  
+- Ensuring smooth integration and communication across multiple layers.  
+- Optimizing disk access through caching and buffering techniques.  
+
+---
+
+## **Future Improvements**  
+- Incorporating advanced query optimization techniques.  
+- Adding transaction management with concurrency control.  
+- Enhancing scalability through distributed storage or partitioning.
+
+---
+
 
 NITCbase offers a user-friendly interface to interact with the RDBMS. You can explore the list of available commands and features in the [User Interface Commands Documentation](https://nitcbase.github.io/docs/User%20Interface%20Commands/).
 
